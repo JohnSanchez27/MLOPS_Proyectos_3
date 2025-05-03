@@ -4,10 +4,12 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import recall_score, classification_report
+from dags.preprocesar_datos import preprocessdata
+import numpy as np
 
 def train_model():
     # Obtener los datos ya preprocesados
-    df_train, df_val, df_test = preprocesar_datos()
+    df_train, df_val, df_test = preprocessdata()
 
     # Separar features (X) y etiquetas (y)
     X_train = df_train.drop("readmitted", axis=1)

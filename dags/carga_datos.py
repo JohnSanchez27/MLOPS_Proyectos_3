@@ -1,5 +1,12 @@
 import os
 import requests
+from sqlalchemy import create_engine, Table, Column, Integer,String, Float, MetaData,Text
+import pandas as pd
+from fastapi import HTTPException, status
+
+from connections import connectionsdb
+
+rawdatadb_engine = connectionsdb[0]
 
 def descargar_datos():
     """
@@ -41,3 +48,49 @@ def descargar_datos():
     else:
         # Si el archivo ya existe, se omite la descarga
         print(f"El archivo de datos ya existe en: {ruta_archivo}")
+
+    insert_data(ruta_archivo)
+
+def insert_data(ruta_archivo_csv):
+    metada_raw = MetaData()
+
+    initial_data_table = Table('initial_data', metada_raw,)
+    
+    df = pd.read_csv(ruta_archivo_csv)
+    headers = list(df.columns)
+    
+    print(f"Columnas del archivo CSV: {headers}")
+    print("Agregar columna 0 como primary key")
+    initial_data_table.append_column(Column(headers[0], Integer, primary_key=True))
+
+    print("Agregando columnas al esquema de la tabla") 
+    id_flag = False
+    for column_name in headers:
+        if id_flag == False:
+            id_flag = True
+            continue
+        
+        print(f"Agregando columna: {column_name} {df[column_name].dtype}")
+        if df[column_name].dtype == 'object':
+            initial_data_table.append_column(Column(column_name, Text))
+        elif df[column_name].dtype == 'int64':
+            initial_data_table.append_column(Column(column_name, Integer))
+        elif df[column_name].dtype == 'float64':
+            initial_data_table.append_column(Column(column_name, Float))    
+        else:
+            initial_data_table.append_column(Column(column_name, Text)) 
+        
+    
+    metada_raw.create_all(rawdatadb_engine, checkfirst=True)
+    
+    try:
+        with rawdatadb_engine.begin() as connection:
+            # Insertar los datos en la tabla
+            df.to_sql('initial_data', con=connection, if_exists='replace', index=False)
+            print("Datos insertados correctamente en la tabla 'initial_data'")
+    except Exception as e:
+        print(f"Error al insertar datos en la tabla: {e}")
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error en la carga de datos")
+    
+        
+    

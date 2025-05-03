@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 def preprocesar_datos():
     
     # Leer el archivo local CSV descargado
-    ruta_archivo = './data/Diabetes/Diabetes.csv'
+    ruta_archivo = './notebooks/data/Diabetes/Diabetes.csv'
     df = pd.read_csv(ruta_archivo)
 
     # Reemplazar valores desconocidos con NaN
@@ -73,3 +73,5 @@ def preprocesar_datos():
     print("Tamaño df_test:", df_test.shape)
 
     return df_train, df_val, df_test
+
+preprocessdata = preprocesar_datos
