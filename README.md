@@ -61,6 +61,7 @@ Instalar dependencias:
 
 ```bash
 pip install -r requirements.txt
+```
 ```bash
 fastapi dev app_back/main.py 
 
