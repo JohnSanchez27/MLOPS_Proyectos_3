@@ -6,29 +6,28 @@ Este proyecto implementa una arquitectura básica de MLOps de manera local para 
 
 ## 📁 Estructura del Proyecto
 
+```text
 Proyecto_3/
 │
-├── app_back/ # Backend con FastAPI
-│ └── main.py # Endpoints de carga, procesamiento, entrenamiento y predicción
+├── app_back/                  # Backend con FastAPI
+│   └── main.py                # Endpoints de carga, procesamiento, entrenamiento y predicción
 │
-├── connections/
-│ ├── init.py
-│ └── mysql_connections.py # Configuración de conexión a MySQL (RAW y CLEAN)
+├── connections/               # Configuración de conexión a MySQL (RAW y CLEAN)
+│   ├── __init__.py
+│   └── mysql_connections.py
 │
-├── dags/
-│ ├── carga_datos.py # Inserta datos crudos en RAW
-│ ├── preprocesar_datos.py # Procesa datos y los guarda por lotes en CLEAN
-│ └── train_model.py # Entrena modelo, guarda .pkl y métricas
+├── dags/                      # Scripts de procesamiento, carga y entrenamiento
+│   ├── carga_datos.py         # Inserta datos crudos en RAW
+│   ├── preprocesar_datos.py   # Procesa datos y los guarda por lotes en CLEAN
+│   └── train_model.py         # Entrena modelo, guarda .pkl y métricas
 │
-├── data/
-│ └── Diabetes.csv # Dataset original
+├── data/                      # Dataset original
+│   └── Diabetes.csv
 │
-├── modelo_entrenado.pkl # Modelo serializado entrenado (Random Forest)
-├── requirements.txt # Dependencias del proyecto
-└── README.md # Documentación del proyecto
-
-
----
+├── modelo_entrenado.pkl       # Modelo serializado entrenado (Random Forest)
+├── requirements.txt           # Dependencias del proyecto
+└── README.md                  # Documentación del proyecto
+```
 
 ## ✅ Funcionalidad Actual
 
