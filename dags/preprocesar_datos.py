@@ -1,9 +1,13 @@
 import pandas as pd
 import numpy as np
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from airflow.sensors.time_delta import TimeDeltaSensor
 from math import ceil
 from sqlalchemy import text, inspect
 from sklearn.model_selection import train_test_split
 from connections import connectionsdb
+
 
 # Motores de conexión a RAW_DATA y CLEAN_DATA
 rawdatadb_engine = connectionsdb[0]
