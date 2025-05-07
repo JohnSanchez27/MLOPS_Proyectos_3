@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
-from airflow import DAG
-from airflow.operators.python_operator import PythonOperator
-from airflow.sensors.time_delta import TimeDeltaSensor
+#from airflow import DAG
+#from airflow.operators.python_operator import PythonOperator
+#from airflow.sensors.time_delta import TimeDeltaSensor
 from math import ceil
 from sqlalchemy import text, inspect
 from sklearn.model_selection import train_test_split
