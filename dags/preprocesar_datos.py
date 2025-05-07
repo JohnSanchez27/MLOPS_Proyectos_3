@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from math import ceil
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 from sklearn.model_selection import train_test_split
 from connections import connectionsdb
 
@@ -72,9 +72,7 @@ def preprocesar_datos():
 
     return df_train, df_val, df_test
 
-from sqlalchemy import inspect
-
-def almacenar_en_clean_data(df_train, df_val, df_test, batch_size=15000):
+def almacenar_en_clean_data(df_train, df_val, df_test, batch_size=15000, random_state=42):
     try:
         inspector = inspect(cleandatadb_engine)
         existing_tables = inspector.get_table_names()
@@ -84,6 +82,9 @@ def almacenar_en_clean_data(df_train, df_val, df_test, batch_size=15000):
                 if tabla in existing_tables:
                     conn.execute(text(f"DELETE FROM {tabla}"))
                     print(f"Contenido de la tabla {tabla} eliminado correctamente.")
+
+        # Mezclar aleatoriamente el conjunto de entrenamiento
+        df_train = df_train.sample(frac=1, random_state=random_state).reset_index(drop=True)
 
         total_batches = ceil(len(df_train) / batch_size)
 

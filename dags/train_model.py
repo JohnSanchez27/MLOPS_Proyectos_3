@@ -1,3 +1,5 @@
+import os
+import shutil
 import pandas as pd
 import numpy as np
 import joblib
@@ -13,16 +15,21 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 from connections import connectionsdb
 
-# Conexión a la base CLEAN_DATA
+
 cleandatadb_engine = connectionsdb[1]
 
-def train_model():
-    # Leer los datos desde la base de datos
-    df_train = pd.read_sql("SELECT * FROM train_data", cleandatadb_engine)
+def ensure_model_dir():
+    model_dir = "models"
+    os.makedirs(model_dir, exist_ok=True)
+    return model_dir
+
+def train_model(batch_id: int):
+    query = f"SELECT * FROM train_data WHERE batch_id = {batch_id}"
+    df_train = pd.read_sql(query, cleandatadb_engine)
     df_val = pd.read_sql("SELECT * FROM val_data", cleandatadb_engine)
     df_test = pd.read_sql("SELECT * FROM test_data", cleandatadb_engine)
 
-    # Separar características y etiquetas
+
     X_train = df_train.drop(["readmitted", "batch_id"], axis=1)
     y_train = df_train["readmitted"]
 
@@ -32,27 +39,25 @@ def train_model():
     X_test = df_test.drop("readmitted", axis=1)
     y_test = df_test["readmitted"]
 
-    # Identificar columnas categóricas y numéricas
-    categorical_features = X_train.select_dtypes(include="object").columns.tolist()
-    numeric_features = X_train.select_dtypes(include=np.number).columns.tolist()
+    categorical = X_train.select_dtypes(include="object").columns.tolist()
+    numeric = X_train.select_dtypes(include=np.number).columns.tolist()
 
-    # Definir el preprocesador
-    preprocessor = ColumnTransformer(transformers=[
-        ('num', StandardScaler(), numeric_features),
-        ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical_features)
+    preprocessor = ColumnTransformer([
+        ('num', StandardScaler(), numeric),
+        ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical)
     ])
 
-    # Crear el pipeline
+
     model = RandomForestClassifier(random_state=42)
     pipe = Pipeline([
         ('preprocessor', preprocessor),
         ('classifier', model)
     ])
 
-    # Entrenar el modelo
+
     pipe.fit(X_train, y_train)
 
-    # Predecir y evaluar
+
     val_pred = pipe.predict(X_val)
     test_pred = pipe.predict(X_test)
 
@@ -65,28 +70,56 @@ def train_model():
         "test_precision": precision_score(y_test, test_pred),
         "test_recall": recall_score(y_test, test_pred),
         "test_f1": f1_score(y_test, test_pred),
+        "batch_id": batch_id
     }
-
-    print("Métricas de validación y test:")
-    for k, v in metrics.items():
-        print(f"{k}: {v:.4f}")
-
-    # Guardar las métricas en la tabla `experiments`
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
     insert_query = text("""
         INSERT INTO experiments (
             timestamp, val_accuracy, val_precision, val_recall, val_f1,
-            test_accuracy, test_precision, test_recall, test_f1
+            test_accuracy, test_precision, test_recall, test_f1, batch_id
         ) VALUES (
-            :timestamp, :val_accuracy, :val_precision, :val_recall, :val_f1,
-            :test_accuracy, :test_precision, :test_recall, :test_f1
+            NOW(), :val_accuracy, :val_precision, :val_recall, :val_f1,
+            :test_accuracy, :test_precision, :test_recall, :test_f1, :batch_id
         )
     """)
     with cleandatadb_engine.begin() as conn:
-        conn.execute(insert_query, {"timestamp": timestamp, **metrics})
+        conn.execute(insert_query, metrics)
 
-    # Guardar modelo como archivo .pkl
-    joblib.dump(pipe, "modelo_entrenado.pkl")
-    print("Modelo guardado como 'modelo_entrenado.pkl'.")
+    # Guardar modelo
+    model_dir = ensure_model_dir()
+    model_path = os.path.join(model_dir, f"modelo_entrenado_batch{batch_id}.pkl")
+    joblib.dump(pipe, model_path)
+    print(f"Modelo guardado como {model_path}")
 
-    return pipe
+    return metrics, model_path
+
+def train_all_batches_and_select_best(metric="val_f1"):
+    query = "SELECT DISTINCT batch_id FROM train_data ORDER BY batch_id"
+    batch_ids = pd.read_sql(query, cleandatadb_engine)["batch_id"].tolist()
+
+    resultados = []
+    for batch_id in batch_ids:
+        try:
+            print(f"Entrenando batch {batch_id}...")
+            metrics, model_file = train_model(batch_id)
+            print(f"Batch {batch_id} entrenado. {metric}={metrics[metric]:.4f}")
+            resultados.append((batch_id, metrics[metric], model_file))
+        except Exception as e:
+            print(f"Error en batch {batch_id}: {e}")
+
+    if not resultados:
+        print("No se entrenó ningún batch.")
+        return
+
+    resultados.sort(key=lambda x: x[1], reverse=True)
+    best_batch, best_score, best_file = resultados[0]
+
+    model_dir = ensure_model_dir()
+    final_model_path = os.path.join(model_dir, "modelo_entrenado_final.pkl")
+
+    if os.path.exists(best_file):
+        shutil.copy(best_file, final_model_path)
+        print(f"Mejor modelo: batch {best_batch} con {metric}={best_score:.4f}")
+        print(f"Copiado como {final_model_path}")
+    else:
+        print(f" No se encontró el archivo {best_file} para copiarlo como modelo final.")

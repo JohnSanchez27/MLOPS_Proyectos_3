@@ -1,5 +1,6 @@
 import sys
 import os
+from pydantic import BaseModel, Field
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import joblib
@@ -11,7 +12,7 @@ from typing import Optional
 import dags.carga_datos as carga_datos
 
 from dags.preprocesar_datos import preprocesar_datos
-
+from dags.train_model import train_all_batches_and_select_best
 from dags.train_model import train_model
 
 from sqlalchemy import text
@@ -91,44 +92,68 @@ def clean():
 @app.get("/train")
 def train_endpoint():
     try:
-        modelo = train_model()  # Esto ya entrena, guarda .pkl y registra en MySQL
+        train_all_batches_and_select_best()
         return {
             "status": 200,
-            "message": "Modelo entrenado, guardado y métricas registradas correctamente"
+            "message": "Todos los batches fueron entrenados y el mejor modelo fue copiado como 'modelo_entrenado_final.pkl'."
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/predict")
-def predict():
+class InputData(BaseModel):
+    race: str = Field(default="Caucasian")
+    gender: str = Field(default="Female")
+    age: int = Field(default=65)
+    time_in_hospital: int = Field(default=3)
+    num_lab_procedures: int = Field(default=44)
+    num_procedures: int = Field(default=0)
+    num_medications: int = Field(default=13)
+    number_outpatient: int = Field(default=0)
+    number_emergency: int = Field(default=0)
+    number_inpatient: int = Field(default=0)
+    number_diagnoses: int = Field(default=9)
+    max_glu_serum: str = Field(default="None")
+    A1Cresult: str = Field(default="None")
+    change: str = Field(default="No")
+    diabetesMed: str = Field(default="Yes")
+    admission_type_id: str = Field(default="Emergencia")
+    discharge_disposition_id: str = Field(default="Alta a casa")
+    admission_source_id: str = Field(default="Referencia")
+    examide: str = Field(default="No")
+    citoglipton: str = Field(default="No")
+
+@app.post("/predict")
+def predict(data: InputData):
     try:
-        # Cargar modelo entrenado
+        # Cargar el mejor modelo entrenado
         try:
-            modelo = joblib.load("modelo_entrenado.pkl")
+            modelo = joblib.load("models/modelo_entrenado_final.pkl")
         except FileNotFoundError:
-            raise HTTPException(status_code=500, detail="Modelo entrenado no encontrado")
+            raise HTTPException(status_code=500, detail="Modelo final no encontrado")
 
-        # Leer datos desde test_data
-        df_test = pd.read_sql("SELECT * FROM test_data", cleandatadb_engine)
+        # Convertir input a DataFrame
+        input_df = pd.DataFrame([data.dict()])
 
-        # Separar X
-        X_test = df_test.drop("readmitted", axis=1)
+        # Realizar predicción
+        prediction = modelo.predict(input_df)[0]
+        probability = modelo.predict_proba(input_df)[0][1]
 
-        # Predecir
-        predictions = modelo.predict(X_test)
-
-        # Agregar predicciones y timestamp al DataFrame original
-        df_test["predicted_readmitted"] = predictions
-        df_test["prediction_timestamp"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # Agregar columnas para guardar
+        input_df["predicted_readmitted"] = int(prediction)
+        input_df["prediction_proba"] = round(float(probability), 4)
+        input_df["prediction_timestamp"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         # Guardar en tabla raw_data.predictions
-        df_test.to_sql("predictions", con=rawdatadb_engine, if_exists='append', index=False)
+        input_df.to_sql("predictions", con=rawdatadb_engine, if_exists='append', index=False)
 
         return {
             "status": 200,
-            "message": f"{len(predictions)} predicciones realizadas y almacenadas en raw_data.predictions"
+            "prediction": int(prediction),
+            "probability": round(float(probability), 4),
+            "message": "Predicción realizada y almacenada en raw_data.predictions"
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
     
