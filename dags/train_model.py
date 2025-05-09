@@ -4,10 +4,10 @@ import pandas as pd
 import numpy as np
 import joblib
 
-#import mlflow
-#from airflow import DAG
-#from airflow.operators.python_operator import PythonOperator
-#from airflow.sensors.time_delta import TimeDeltaSensor
+import mlflow
+from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from airflow.sensors.time_delta import TimeDeltaSensor
 
 
 from datetime import datetime
