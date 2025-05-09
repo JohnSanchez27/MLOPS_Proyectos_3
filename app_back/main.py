@@ -6,6 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import joblib
 import pandas as pd
 from datetime import datetime
+from sqlalchemy import inspect
 from math import ceil
 from fastapi import FastAPI, HTTPException, status, Query
 from typing import Optional
@@ -15,7 +16,7 @@ from dags.preprocesar_datos import preprocesar_datos
 from dags.train_model import train_all_batches_and_select_best
 from dags.train_model import train_model
 
-from sqlalchemy import text
+from sqlalchemy import inspect,Table, MetaData, Column, Float, Integer, String, DateTime, Text
 from connections import connectionsdb
 
 import logging
@@ -46,6 +47,22 @@ def clean():
         batch_size = 15000
         total_batches = ceil(len(df_train) / batch_size)
 
+        inspector = inspect(cleandatadb_engine)
+        tablas_existentes = inspector.get_table_names()
+
+        # Crear las tablas si no existen, incluyendo batch_id para train_data
+        if 'train_data' not in tablas_existentes:
+            temp = df_train.copy()
+            temp['batch_id'] = 0  # Asegura que se cree la columna
+            temp.head(0).to_sql('train_data', con=cleandatadb_engine, index=False, if_exists='replace')
+            logging.info("Tabla 'train_data' creada.")
+        if 'val_data' not in tablas_existentes:
+            df_val.head(0).to_sql('val_data', con=cleandatadb_engine, index=False, if_exists='replace')
+            logging.info("Tabla 'val_data' creada.")
+        if 'test_data' not in tablas_existentes:
+            df_test.head(0).to_sql('test_data', con=cleandatadb_engine, index=False, if_exists='replace')
+            logging.info("Tabla 'test_data' creada.")
+
         # Limpiar las tablas antes de insertar nuevos datos
         with cleandatadb_engine.begin() as conn:
             conn.execute(text("DELETE FROM train_data"))
@@ -66,11 +83,12 @@ def clean():
             df_train_batch.to_sql('train_data', con=cleandatadb_engine, if_exists='append', index=False)
             logging.info(f"Batch {batch_number} almacenado correctamente.")
 
-        # Insertar validación y prueba una sola vez
-        df_val.to_sql('val_data', con=cleandatadb_engine, if_exists='replace', index=False)
-        df_test.to_sql('test_data', con=cleandatadb_engine, if_exists='replace', index=False)
+        # Insertar validación y prueba
+        df_val.to_sql('val_data', con=cleandatadb_engine, if_exists='append', index=False)
+        df_test.to_sql('test_data', con=cleandatadb_engine, if_exists='append', index=False)
         logging.info("Datos de validación y prueba almacenados correctamente.")
 
+        # Consultar totales
         with cleandatadb_engine.connect() as conn:
             train_rows = conn.execute(text("SELECT COUNT(*) FROM train_data")).scalar()
             val_rows = conn.execute(text("SELECT COUNT(*) FROM val_data")).scalar()
@@ -143,7 +161,27 @@ def predict(data: InputData):
         input_df["prediction_proba"] = round(float(probability), 4)
         input_df["prediction_timestamp"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Guardar en tabla raw_data.predictions
+        # Crear tabla 'predictions' si no existe
+        inspector = inspect(rawdatadb_engine)
+        if "predictions" not in inspector.get_table_names():
+            metadata = MetaData()
+            columns = []
+
+            for col, dtype in input_df.dtypes.items():
+                if dtype == "int64":
+                    columns.append(Column(col, Integer))
+                elif dtype == "float64":
+                    columns.append(Column(col, Float))
+                elif dtype.name.startswith("datetime"):
+                    columns.append(Column(col, DateTime))
+                else:
+                    columns.append(Column(col, String(255)))
+
+            Table("predictions", metadata, *columns)
+            metadata.create_all(rawdatadb_engine)
+            print("Tabla 'predictions' creada.")
+
+        # Guardar predicción
         input_df.to_sql("predictions", con=rawdatadb_engine, if_exists='append', index=False)
 
         return {
@@ -155,5 +193,4 @@ def predict(data: InputData):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
-    
+

@@ -12,7 +12,7 @@ import joblib
 
 from datetime import datetime
 
-from sqlalchemy import text
+from sqlalchemy import text, inspect, Table, MetaData, Column, Float, Integer, DateTime
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.compose import ColumnTransformer
 
@@ -30,13 +30,32 @@ def ensure_model_dir():
     os.makedirs(model_dir, exist_ok=True)
     return model_dir
 
+def crear_tabla_experiments_si_no_existe(engine):
+    inspector = inspect(engine)
+    if 'experiments' not in inspector.get_table_names():
+        metadata = MetaData()
+        Table('experiments', metadata,
+              Column('timestamp', DateTime),
+              Column('val_accuracy', Float),
+              Column('val_precision', Float),
+              Column('val_recall', Float),
+              Column('val_f1', Float),
+              Column('test_accuracy', Float),
+              Column('test_precision', Float),
+              Column('test_recall', Float),
+              Column('test_f1', Float),
+              Column('batch_id', Integer)
+        )
+        metadata.create_all(engine)
+        print("Tabla 'experiments' creada.")
+
 def train_model(batch_id: int):
     query = f"SELECT * FROM train_data WHERE batch_id = {batch_id}"
     df_train = pd.read_sql(query, cleandatadb_engine)
     df_val = pd.read_sql("SELECT * FROM val_data", cleandatadb_engine)
     df_test = pd.read_sql("SELECT * FROM test_data", cleandatadb_engine)
 
-
+    
     X_train = df_train.drop(["readmitted", "batch_id"], axis=1)
     y_train = df_train["readmitted"]
 
@@ -54,17 +73,17 @@ def train_model(batch_id: int):
         ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical)
     ])
 
-
+    
     model = RandomForestClassifier(random_state=42)
     pipe = Pipeline([
         ('preprocessor', preprocessor),
         ('classifier', model)
     ])
 
-
+    
     pipe.fit(X_train, y_train)
 
-
+    
     val_pred = pipe.predict(X_val)
     test_pred = pipe.predict(X_test)
 
@@ -79,7 +98,9 @@ def train_model(batch_id: int):
         "test_f1": f1_score(y_test, test_pred),
         "batch_id": batch_id
     }
-    
+
+    crear_tabla_experiments_si_no_existe(cleandatadb_engine)
+
     insert_query = text("""
         INSERT INTO experiments (
             timestamp, val_accuracy, val_precision, val_recall, val_f1,
@@ -92,7 +113,7 @@ def train_model(batch_id: int):
     with cleandatadb_engine.begin() as conn:
         conn.execute(insert_query, metrics)
 
-    # Guardar modelo
+    
     model_dir = ensure_model_dir()
     model_path = os.path.join(model_dir, f"modelo_entrenado_batch{batch_id}.pkl")
     joblib.dump(pipe, model_path)
@@ -129,4 +150,4 @@ def train_all_batches_and_select_best(metric="val_f1"):
         print(f"Mejor modelo: batch {best_batch} con {metric}={best_score:.4f}")
         print(f"Copiado como {final_model_path}")
     else:
-        print(f" No se encontró el archivo {best_file} para copiarlo como modelo final.")
+        print(f"No se encontró el archivo {best_file} para copiarlo como modelo final.")
