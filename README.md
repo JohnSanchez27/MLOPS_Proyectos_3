@@ -129,25 +129,25 @@ Proyecto_3/
 
 Airflow se encarga de orquestar las tareas del flujo ETL y entrenamiento. Se ha implementado con Docker Compose y se compone de los siguientes DAGs:
 
-- `cargar_datos`: descarga un dataset CSV desde Google Drive y lo inserta en MySQL en la Base `ROW_DATA`.
-- `preprocesar_datos`: limpia y transforma los datos, y los guarda en la base `CLEAN_DATA`.
-- `train_model`: entrena varios modelos por lotes y selecciona el mejor usando `RandomForest`.
+  - `cargar_datos`: descarga un dataset CSV desde Google Drive y lo inserta en MySQL en la Base `ROW_DATA`.
+  - `preprocesar_datos`: limpia y transforma los datos, y los guarda en la base `CLEAN_DATA`.
+  - `train_model`: entrena varios modelos por lotes y selecciona el mejor usando `RandomForest`.
 
   **Configuraciones destacadas**:
-- Los DAGs se ejecutan en orden gracias a `ExternalTaskSensor`.
-- Se utilizan `PythonOperator` para ejecutar funciones personalizadas.
-- Airflow usa MySQL como backend.
-- El servicio está expuesto en el puerto `8080`.
+  - Los DAGs se ejecutan en orden gracias a `ExternalTaskSensor`.
+  - Se utilizan `PythonOperator` para ejecutar funciones personalizadas.
+  - Airflow usa MySQL como backend.
+  - El servicio está expuesto en el puerto `8080`.
 
   ![Airflow](imagenes/Ariflow.png)
 
 - **Minio**  
 MinIO actúa como almacenamiento tipo S3 para MLflow.
 
-- Se expone la consola de MinIO en el puerto `8083`.
-- Se creó un bucket llamado `mlflows3`.
-- MLflow puede subir automáticamente modelos `.pkl` y archivos al bucket.
-- El servicio está expuesto en el puerto `8083`.
+  - Se expone la consola de MinIO en el puerto `8083`.
+  - Se creó un bucket llamado `mlflows3`.
+  - MLflow puede subir automáticamente modelos `.pkl` y archivos al bucket.
+  - El servicio está expuesto en el puerto `8083`.
 
   ![Minio](imagenes/minio.png)
 
@@ -155,18 +155,18 @@ MinIO actúa como almacenamiento tipo S3 para MLflow.
 
 MLflow gestiona el tracking de los experimentos y almacenamiento de modelos. Se configuró de la siguiente forma:
 
-- Usando `mysql` como `backend-store-uri` para guardar metadata de experimentos.
-- Usando `MinIO` como almacenamiento de artefactos (`--default-artifact-root s3://mlflows3`).
-- Se configuró un contenedor `mlflow_server` en Docker Compose.
-- El servicio está expuesto en el puerto `8084`.
-- Entra al contenedor de MySQL y ya dentro de la consola de MySQL:
+  - Usando `mysql` como `backend-store-uri` para guardar metadata de experimentos.
+  - Usando `MinIO` como almacenamiento de artefactos (`--default-artifact-root s3://mlflows3`).
+  - Se configuró un contenedor `mlflow_server` en Docker Compose.
+  - El servicio está expuesto en el puerto `8084`.
+  - Entra al contenedor de MySQL y ya dentro de la consola de MySQL:
 
 ```bash
 
-docker exec -it mysql mysql -u root
-contraseña: 
-CREATE DATABASE IF NOT EXISTS mlflow;
-EXIT;
+  docker exec -it mysql mysql -u root
+  contraseña: 
+  CREATE DATABASE IF NOT EXISTS mlflow;
+  EXIT;
 ```
 - Nota: Aun esta pendiente configurar para que los experimentos que se realicen con el DAG de entrenamiento almacene los resultados como el modelo. 
 
