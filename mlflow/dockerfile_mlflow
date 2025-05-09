@@ -1,0 +1,10 @@
+# Usa la imagen oficial de Python 3.9 como base
+FROM python:3.9
+
+# Copia el archivo de requisitos específicos para MLflow al contenedor
+COPY ./requirements_mlflow.txt /requirements_mlflow.txt
+
+# Actualiza pip e instala las dependencias necesarias para correr MLflow,
+# usando el archivo de requerimientos. Se hace en una sola capa para optimizar la imagen.
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r /requirements_mlflow.txt

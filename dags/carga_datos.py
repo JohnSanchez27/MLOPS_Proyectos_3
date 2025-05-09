@@ -1,21 +1,18 @@
+import sys
 import os
+import pandas as pd
 import requests
-
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from connections import connectionsdb
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.sensors.time_delta import TimeDeltaSensor
-
-import pandas as pd
-
-from sqlalchemy import create_engine, text, Table, Column, Integer, Float, MetaData, Text, inspect
+from datetime import datetime, timedelta
 from fastapi import HTTPException, status
-
-from connections import connectionsdb
-
-# Crear bases de datos si no existen antes de hacer cualquier cosa
+from sqlalchemy import create_engine, text, Table, Column, Integer, Float, MetaData, Text, inspect # Crear bases de datos si no existen antes de hacer cualquier cosa
 
 PASSWORD = 'Compaq*87'
-root_engine = create_engine(f'mysql+pymysql://root:{PASSWORD}@localhost:3306')
+root_engine = create_engine(f'mysql+pymysql://root:{PASSWORD}@mysql:3306')
 with root_engine.connect() as conn:
     conn.execute(text("CREATE DATABASE IF NOT EXISTS RAW_DATA"))
     conn.execute(text("CREATE DATABASE IF NOT EXISTS CLEAN_DATA"))
@@ -95,3 +92,24 @@ def insert_data(ruta_archivo_csv):
         raise HTTPException(status_code=500, detail="El archivo CSV está vacío o sin columnas.")
     print(f"Columnas del archivo CSV: {list(df.columns)}")
     crear_si_no_existe_y_reemplazar_con_datos(df, "initial_data", rawdatadb_engine)
+
+
+default_args = {
+    'owner': 'airflow',
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+with DAG(
+    dag_id='cargar_datos',
+    default_args=default_args,
+    schedule_interval='@daily',  
+    start_date=datetime(2025, 5, 1),  
+    catchup=False,  # 
+    tags=['Download_upload']
+) as dag:
+
+    tarea_descargar = PythonOperator(
+        task_id='descargar_datos',
+        python_callable=descargar_datos
+    )

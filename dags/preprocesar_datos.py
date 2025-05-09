@@ -1,14 +1,20 @@
+import sys
+import os
 import pandas as pd
 import numpy as np
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from connections import connectionsdb
+from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
+from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.sensors.time_delta import TimeDeltaSensor
 
 from math import ceil
 from sqlalchemy import text, inspect
 from sklearn.model_selection import train_test_split
-from connections import connectionsdb
+
 
 
 
@@ -123,3 +129,40 @@ def almacenar_en_clean_data(df_train, df_val, df_test, batch_size=15000, random_
     except Exception as e:
         print(f"Error al almacenar en CLEAN_DATA: {e}")
         raise e
+
+# Definición del DAG
+default_args = {
+    'owner': 'airflow',
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+def ejecutar_preprocesamiento():
+    df_train, df_val, df_test = preprocesar_datos()
+    almacenar_en_clean_data(df_train, df_val, df_test)
+    
+with DAG(
+    dag_id='preprocesar_datos',
+    default_args=default_args,
+    schedule_interval=None,
+    start_date=datetime(2025, 5, 1),
+    catchup=False,
+    tags=['ETL']
+) as dag:
+
+    # Sensor para esperar la carga de datos
+    esperar_carga = ExternalTaskSensor(
+        task_id='esperar_dag_carga',
+        external_dag_id='cargar_datos',         # dag_id del DAG de carga
+        external_task_id='descargar_datos',     # task_id que debe completarse
+        mode='poke',
+        timeout=600,
+        poke_interval=30
+    )
+
+    tarea_preprocesar = PythonOperator(
+        task_id='preprocesar_datos',
+        python_callable=ejecutar_preprocesamiento
+    )
+
+    esperar_carga >> tarea_preprocesar

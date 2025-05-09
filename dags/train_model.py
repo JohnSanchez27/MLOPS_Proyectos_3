@@ -1,4 +1,7 @@
+import sys
 import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from connections import connectionsdb
 import shutil
 import pandas as pd
 import numpy as np
@@ -8,9 +11,8 @@ import mlflow
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.sensors.time_delta import TimeDeltaSensor
-
-
-from datetime import datetime
+from airflow.sensors.external_task import ExternalTaskSensor
+from datetime import datetime, timedelta
 
 from sqlalchemy import text, inspect, Table, MetaData, Column, Float, Integer, DateTime
 from sklearn.ensemble import RandomForestClassifier
@@ -20,10 +22,11 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-from connections import connectionsdb
+
 
 
 cleandatadb_engine = connectionsdb[1]
+
 
 def ensure_model_dir():
     model_dir = "models"
@@ -151,3 +154,37 @@ def train_all_batches_and_select_best(metric="val_f1"):
         print(f"Copiado como {final_model_path}")
     else:
         print(f"No se encontró el archivo {best_file} para copiarlo como modelo final.")
+
+# Definición del DAG
+default_args = {
+    'owner': 'airflow',
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+with DAG(
+    dag_id='entrenar_modelo',
+    default_args=default_args,
+    schedule_interval=None,
+    start_date=datetime(2025, 5, 1),
+    catchup=False,
+    tags=['ETL', 'modelo']
+) as dag:
+
+    esperar_preprocesamiento = ExternalTaskSensor(
+        task_id='esperar_preprocesamiento',
+        external_dag_id='preprocesar_datos',          # nombre del DAG anterior
+        external_task_id='preprocesar_datos',         # task_id que debe terminar
+        mode='poke',
+        timeout=600,
+        poke_interval=30
+    )
+
+    entrenar_modelos = PythonOperator(
+        task_id='train_model_all_batches',
+        python_callable=train_all_batches_and_select_best
+    )
+
+    esperar_preprocesamiento >> entrenar_modelos
+
+
