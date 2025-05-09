@@ -139,7 +139,7 @@ Airflow se encarga de orquestar las tareas del flujo ETL y entrenamiento. Se ha 
 - Airflow usa MySQL como backend.
 - El servicio está expuesto en el puerto `8080`.
 
-  ![Airflow](imagenes\Ariflow.png)
+  ![Airflow](imagenes/Ariflow.png)
 
 - **Minio**  
 MinIO actúa como almacenamiento tipo S3 para MLflow.
@@ -149,7 +149,7 @@ MinIO actúa como almacenamiento tipo S3 para MLflow.
 - MLflow puede subir automáticamente modelos `.pkl` y archivos al bucket.
 - El servicio está expuesto en el puerto `8083`.
 
-  ![Minio](imagenes\minio.png)
+  ![Minio](imagenes/minio.png)
 
 - **MlFlow**  
 
@@ -170,8 +170,7 @@ EXIT;
 ```
 - Nota: Aun esta pendiente configurar para que los experimentos que se realicen con el DAG de entrenamiento almacene los resultados como el modelo. 
 
-  ![MlFlow](imagenes\mlflow.png)
-
+  ![MlFlow](imagenes/mlflow.png)
 ---
 
 ## 🧰 Requisitos y Puesta en Marcha
