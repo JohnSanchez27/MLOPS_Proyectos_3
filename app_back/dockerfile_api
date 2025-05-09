@@ -1,0 +1,11 @@
+# Usa la imagen oficial de Python 3.9 como base
+
+FROM python:3.9
+
+COPY app_back/requirements_api.txt .
+
+RUN pip install --no-cache-dir -r requirements_api.txt
+
+COPY . .
+
+CMD ["uvicorn", "app_back.main:app", "--host", "0.0.0.0", "--port", "8000"]

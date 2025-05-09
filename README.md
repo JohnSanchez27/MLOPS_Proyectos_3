@@ -159,16 +159,13 @@ MLflow gestiona el tracking de los experimentos y almacenamiento de modelos. Se 
   - Usando `MinIO` como almacenamiento de artefactos (`--default-artifact-root s3://mlflows3`).
   - Se configuró un contenedor `mlflow_server` en Docker Compose.
   - El servicio está expuesto en el puerto `8084`.
-  - Entra al contenedor de MySQL y ya dentro de la consola de MySQL:
+  - Asi mismo se creo un archivo init.SQL que solo se ejecuta  si el volumen está vacío 
 
-```bash
-
-  docker exec -it mysql mysql -u root
-  contraseña: 
-  CREATE DATABASE IF NOT EXISTS mlflow;
-  EXIT;
 ```
-- Nota: Aun esta pendiente configurar para que los experimentos que se realicen con el DAG de entrenamiento almacene los resultados como el modelo. 
+-- ./mysql-init/init.sql
+CREATE DATABASE IF NOT EXISTS mlflow;
+```
+
 
   ![MlFlow](imagenes/mlflow.png)
 ---

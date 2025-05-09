@@ -8,6 +8,7 @@ import numpy as np
 import joblib
 
 import mlflow
+import mlflow.sklearn
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from airflow.sensors.time_delta import TimeDeltaSensor
@@ -83,44 +84,51 @@ def train_model(batch_id: int):
         ('classifier', model)
     ])
 
-    
-    pipe.fit(X_train, y_train)
+    # Configurar conexión al servidor MLflow
+    mlflow.set_tracking_uri("http://mlflow_server:5000")
+    mlflow.set_experiment("experiment_diabetes_batches")
 
-    
-    val_pred = pipe.predict(X_val)
-    test_pred = pipe.predict(X_test)
+    with mlflow.start_run(run_name=f"batch_{batch_id}"):
+        pipe.fit(X_train, y_train)
 
-    metrics = {
-        "val_accuracy": accuracy_score(y_val, val_pred),
-        "val_precision": precision_score(y_val, val_pred),
-        "val_recall": recall_score(y_val, val_pred),
-        "val_f1": f1_score(y_val, val_pred),
-        "test_accuracy": accuracy_score(y_test, test_pred),
-        "test_precision": precision_score(y_test, test_pred),
-        "test_recall": recall_score(y_test, test_pred),
-        "test_f1": f1_score(y_test, test_pred),
-        "batch_id": batch_id
-    }
+        val_pred = pipe.predict(X_val)
+        test_pred = pipe.predict(X_test)
 
-    crear_tabla_experiments_si_no_existe(cleandatadb_engine)
+        metrics = {
+            "val_accuracy": accuracy_score(y_val, val_pred),
+            "val_precision": precision_score(y_val, val_pred),
+            "val_recall": recall_score(y_val, val_pred),
+            "val_f1": f1_score(y_val, val_pred),
+            "test_accuracy": accuracy_score(y_test, test_pred),
+            "test_precision": precision_score(y_test, test_pred),
+            "test_recall": recall_score(y_test, test_pred),
+            "test_f1": f1_score(y_test, test_pred),
+            "batch_id": batch_id
+        }
 
-    insert_query = text("""
-        INSERT INTO experiments (
-            timestamp, val_accuracy, val_precision, val_recall, val_f1,
-            test_accuracy, test_precision, test_recall, test_f1, batch_id
-        ) VALUES (
-            NOW(), :val_accuracy, :val_precision, :val_recall, :val_f1,
-            :test_accuracy, :test_precision, :test_recall, :test_f1, :batch_id
-        )
-    """)
-    with cleandatadb_engine.begin() as conn:
-        conn.execute(insert_query, metrics)
+        for k, v in metrics.items():
+            mlflow.log_metric(k, v)
 
-    
-    model_dir = ensure_model_dir()
-    model_path = os.path.join(model_dir, f"modelo_entrenado_batch{batch_id}.pkl")
-    joblib.dump(pipe, model_path)
-    print(f"Modelo guardado como {model_path}")
+        mlflow.sklearn.log_model(pipe, artifact_path="modelo")
+
+        crear_tabla_experiments_si_no_existe(cleandatadb_engine)
+        insert_query = text("""
+            INSERT INTO experiments (
+                timestamp, val_accuracy, val_precision, val_recall, val_f1,
+                test_accuracy, test_precision, test_recall, test_f1, batch_id
+            ) VALUES (
+                NOW(), :val_accuracy, :val_precision, :val_recall, :val_f1,
+                :test_accuracy, :test_precision, :test_recall, :test_f1, :batch_id
+            )
+        """)
+        with cleandatadb_engine.begin() as conn:
+            conn.execute(insert_query, metrics)
+
+        model_dir = ensure_model_dir()
+        model_path = os.path.join(model_dir, f"modelo_entrenado_batch{batch_id}.pkl")
+        joblib.dump(pipe, model_path)
+        mlflow.log_artifact(model_path)
+        print(f"Modelo guardado como {model_path}")
 
     return metrics, model_path
 

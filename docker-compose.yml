@@ -124,12 +124,25 @@ services:
       - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 10
     restart: always
+
+  api_backend:
+    build:
+      context: .                  # ← importante
+      dockerfile: app_back/dockerfile_api
+    container_name: fastapi_app
+    ports:
+     - "8000:8000"
+    volumes:
+      - ./models:/code/models
+    depends_on:
+      - mysql
 
   minio:
     container_name: minio
