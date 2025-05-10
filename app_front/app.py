@@ -1,19 +1,12 @@
-import streamlit as st
-import requests
-import pandas as pd
 import sys
 import os
-
-# Agrega la ruta para importar conexiones desde el backend
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from connections.mysql_connections import engine_raw_data
-
-# Configurar página
-st.set_page_config(page_title="Predicción de Reingreso", layout="wide")
+import pandas as pd
+import streamlit as st
+import requests
+# Configurar página y # st.set_page_config(page_title="Predicción de Reingreso", layout="wide")
 st.title("🩺 Sistema de Predicción de Reingreso Hospitalario")
 
-# URL del endpoint
+# URL del endpoint FastAPI
 API_URL = "http://localhost:8000/predict"
 
 
@@ -51,7 +44,7 @@ with st.form("formulario_prediccion"):
     submitted = st.form_submit_button("🔍 Predecir")
 
 if submitted:
-    # Armar payload
+
     payload = {
         "race": race,
         "gender": gender,
@@ -76,39 +69,18 @@ if submitted:
     }
 
     try:
-        # Llamar al endpoint de predicción
+        
         response = requests.post(API_URL, json=payload)
         response.raise_for_status()
         resultado = response.json()
 
         st.success("Predicción realizada correctamente")
         st.metric("Resultado", "Readmitido" if resultado["prediction"] == 1 else "No Readmitido")
-        st.metric("Probabilidad de readmisión", f"{resultado['probability']*100:.2f}%")
+
+        if resultado["probability"] is not None:
+            st.metric("Probabilidad de readmisión", f"{resultado['probability'] * 100:.2f}%")
+        else:
+            st.warning(" El modelo no retornó probabilidad.")
 
     except requests.exceptions.RequestException as e:
-        st.error(f"Error al conectar con la API: {e}")
-
-# Sección de historial
-st.markdown("##Historial de Predicciones Recientes")
-
-try:
-    df_historial = pd.read_sql("SELECT * FROM predictions ORDER BY prediction_timestamp DESC LIMIT 50", con=engine_raw_data)
-    df_historial["prediction_timestamp"] = pd.to_datetime(df_historial["prediction_timestamp"])
-    df_historial = df_historial[[
-        "prediction_timestamp", "race", "gender", "age",
-        "time_in_hospital", "predicted_readmitted", "prediction_proba"
-    ]]
-    df_historial.rename(columns={
-        "prediction_timestamp": "Fecha",
-        "race": "Raza",
-        "gender": "Género",
-        "age": "Edad",
-        "time_in_hospital": "Estancia",
-        "predicted_readmitted": "Readmitido",
-        "prediction_proba": "Probabilidad"
-    }, inplace=True)
-
-    st.dataframe(df_historial, use_container_width=True)
-
-except Exception as e:
-    st.warning(f"No se pudo cargar el historial: {e}")
+        st.error(f" Error al conectar con la API: {e}")

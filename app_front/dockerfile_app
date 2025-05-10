@@ -1,0 +1,15 @@
+# Imagen base oficial de Python
+
+FROM python:3.9
+
+WORKDIR /app
+
+COPY app_front/requirements_app.txt /app/requirements.txt
+
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+COPY app_front/app.py /app/app.py
+
+COPY connections /app/connections
+
+CMD ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
