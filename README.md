@@ -120,10 +120,9 @@ Proyecto_3/
 
 | Endpoint        | Acción                                                   |
 |----------------|----------------------------------------------------------|
-| `/download`     | Descarga el dataset e inserta en `raw_data.initial_data` |
-| `/clean`        | Preprocesa y divide los datos, luego guarda por lotes    |
-| `/train`        | Entrena todos los modelos por lote y selecciona el mejor |
 | `/predict`      | Realiza predicciones usando el mejor modelo entrenado    |
+
+  ![Interfaz FastApi](imagenes/FastApi.png)
 
 - **Airflow**  
 
