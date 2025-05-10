@@ -12,12 +12,12 @@ from fastapi import HTTPException, status
 from sqlalchemy import create_engine, text, Table, Column, Integer, Float, MetaData, Text, inspect # Crear bases de datos si no existen antes de hacer cualquier cosa
 
 PASSWORD = 'Compaq*87'
-root_engine = create_engine(f'mysql+pymysql://root:{PASSWORD}@mysql:3306')
-with root_engine.connect() as conn:
-    conn.execute(text("CREATE DATABASE IF NOT EXISTS RAW_DATA"))
-    conn.execute(text("CREATE DATABASE IF NOT EXISTS CLEAN_DATA"))
-    print("Bases de datos RAW_DATA y CLEAN_DATA verificadas/creadas.")
-
+def crear_bases_si_no_existen():
+    root_engine = create_engine(f'mysql+pymysql://root:{PASSWORD}@mysql:3306')
+    with root_engine.connect() as conn:
+        conn.execute(text("CREATE DATABASE IF NOT EXISTS RAW_DATA"))
+        conn.execute(text("CREATE DATABASE IF NOT EXISTS CLEAN_DATA"))
+    print("Bases de datos verificadas/creadas.")
 
 rawdatadb_engine = connectionsdb[0]
 

@@ -22,6 +22,7 @@ var/
 .installed.cfg
 *.egg
 logs/
-.dockerignore
-Dockerfile
+minio/*
+logs/*
+
 *.log

@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from connections import connectionsdb
+
 import shutil
 import pandas as pd
 import numpy as np
@@ -11,7 +11,7 @@ import mlflow
 import mlflow.sklearn
 from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
-from airflow.sensors.time_delta import TimeDeltaSensor
+
 from airflow.sensors.external_task import ExternalTaskSensor
 from datetime import datetime, timedelta
 
@@ -23,11 +23,10 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
-
-
-
-cleandatadb_engine = connectionsdb[1]
-
+# Encapsular la conexión
+def get_engine():
+    from connections import connectionsdb
+    return connectionsdb[1]
 
 def ensure_model_dir():
     model_dir = "models"
@@ -54,12 +53,12 @@ def crear_tabla_experiments_si_no_existe(engine):
         print("Tabla 'experiments' creada.")
 
 def train_model(batch_id: int):
+    engine = get_engine()
     query = f"SELECT * FROM train_data WHERE batch_id = {batch_id}"
-    df_train = pd.read_sql(query, cleandatadb_engine)
-    df_val = pd.read_sql("SELECT * FROM val_data", cleandatadb_engine)
-    df_test = pd.read_sql("SELECT * FROM test_data", cleandatadb_engine)
+    df_train = pd.read_sql(query, engine)
+    df_val = pd.read_sql("SELECT * FROM val_data", engine)
+    df_test = pd.read_sql("SELECT * FROM test_data", engine)
 
-    
     X_train = df_train.drop(["readmitted", "batch_id"], axis=1)
     y_train = df_train["readmitted"]
 
@@ -77,14 +76,14 @@ def train_model(batch_id: int):
         ('cat', OneHotEncoder(sparse_output=False, handle_unknown='ignore'), categorical)
     ])
 
-    
+
     model = RandomForestClassifier(random_state=42)
     pipe = Pipeline([
         ('preprocessor', preprocessor),
         ('classifier', model)
     ])
 
-    # Configurar conexión al servidor MLflow
+
     mlflow.set_tracking_uri("http://mlflow_server:5000")
     mlflow.set_experiment("experiment_diabetes_batches")
 
@@ -111,7 +110,7 @@ def train_model(batch_id: int):
 
         mlflow.sklearn.log_model(pipe, artifact_path="modelo")
 
-        crear_tabla_experiments_si_no_existe(cleandatadb_engine)
+        crear_tabla_experiments_si_no_existe(engine)
         insert_query = text("""
             INSERT INTO experiments (
                 timestamp, val_accuracy, val_precision, val_recall, val_f1,
@@ -121,7 +120,7 @@ def train_model(batch_id: int):
                 :test_accuracy, :test_precision, :test_recall, :test_f1, :batch_id
             )
         """)
-        with cleandatadb_engine.begin() as conn:
+        with engine.begin() as conn:
             conn.execute(insert_query, metrics)
 
         model_dir = ensure_model_dir()
@@ -133,8 +132,9 @@ def train_model(batch_id: int):
     return metrics, model_path
 
 def train_all_batches_and_select_best(metric="val_f1"):
+    engine = get_engine()
     query = "SELECT DISTINCT batch_id FROM train_data ORDER BY batch_id"
-    batch_ids = pd.read_sql(query, cleandatadb_engine)["batch_id"].tolist()
+    batch_ids = pd.read_sql(query, engine)["batch_id"].tolist()
 
     resultados = []
     for batch_id in batch_ids:
@@ -181,8 +181,8 @@ with DAG(
 
     esperar_preprocesamiento = ExternalTaskSensor(
         task_id='esperar_preprocesamiento',
-        external_dag_id='preprocesar_datos',          # nombre del DAG anterior
-        external_task_id='preprocesar_datos',         # task_id que debe terminar
+        external_dag_id='preprocesar_datos',
+        external_task_id='preprocesar_datos',
         mode='poke',
         timeout=600,
         poke_interval=30

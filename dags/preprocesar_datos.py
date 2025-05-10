@@ -16,14 +16,16 @@ from sqlalchemy import text, inspect
 from sklearn.model_selection import train_test_split
 
 
-
-
-rawdatadb_engine = connectionsdb[0]
-cleandatadb_engine = connectionsdb[1]
+def get_engines():
+    from connections import connectionsdb
+    rawdatadb_engine = connectionsdb[0]
+    cleandatadb_engine = connectionsdb[1]
+    return rawdatadb_engine, cleandatadb_engine
 
 
 def preprocesar_datos():
 
+    rawdatadb_engine, _ = get_engines()
     query = "SELECT * FROM initial_data"
     df = pd.read_sql(query, rawdatadb_engine)
 
@@ -102,7 +104,7 @@ def crear_y_reemplazar_si_existe(df, table_name, engine):
     print(f"Datos insertados en {table_name}.")
 
 def almacenar_en_clean_data(df_train, df_val, df_test, batch_size=15000, random_state=42):
-
+    _, cleandatadb_engine = get_engines()
     try:
         
         df_train = df_train.sample(frac=1, random_state=random_state).reset_index(drop=True)
