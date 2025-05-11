@@ -146,9 +146,9 @@ def ejecutar_preprocesamiento():
 with DAG(
     dag_id='preprocesar_datos',
     default_args=default_args,
-    #schedule_interval=None,
+    schedule_interval=None,
     #start_date=datetime(2025, 5, 1),
-    #catchup=False,
+    catchup=False,
     tags=['ETL']
 ) as dag:
 

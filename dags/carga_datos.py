@@ -103,9 +103,9 @@ default_args = {
 with DAG(
     dag_id='cargar_datos',
     default_args=default_args,
-    #schedule_interval='@daily',  
+    schedule_interval='@daily',  
     #start_date=datetime(2025, 5, 1),  
-    #catchup=False,  # 
+    catchup=False,  # 
     tags=['Download_upload']
 ) as dag:
 
