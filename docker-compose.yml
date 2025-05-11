@@ -134,18 +134,18 @@ services:
       retries: 10
     restart: always
 
-#  api_backend:
-#    build:
-#      context: .                  # ← importante
-#      dockerfile: app_back/dockerfile_api
-#    container_name: fastapi_app
-#    ports:
-#     - "8000:8000"
-#    volumes:
-#      - ./models:/code/models
-#    depends_on:
-#      - mysql
-#    restart: always
+  api_backend:
+    build:
+      context: .                  # ← importante
+      dockerfile: app_back/dockerfile_api
+    container_name: fastapi_app
+    ports:
+     - "8000:8000"
+    volumes:
+      - ./models:/code/models
+    depends_on:
+      - mysql
+    restart: always
 
 #  streamlit_front:
 #    build:
