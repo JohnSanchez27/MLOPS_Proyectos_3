@@ -174,7 +174,7 @@ with DAG(
     dag_id='entrenar_modelo',
     default_args=default_args,
     schedule_interval=None,
-    start_date=datetime(2025, 12, 1),
+    start_date=datetime.now(),
     catchup=False,
     tags=['ETL', 'modelo']
 ) as dag:
