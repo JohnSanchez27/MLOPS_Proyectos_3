@@ -16,7 +16,7 @@ MLFLOW_MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "mejor_modelo_diabetes")
 # Cargar modelo desde MLflow
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 model_uri = f"models:/{MLFLOW_MODEL_NAME}/Production"
-model = mlflow.pyfunc.load_model(model_uri)
+#model = mlflow.pyfunc.load_model(model_uri)
 
 
 # Inicialización de FastAPI
