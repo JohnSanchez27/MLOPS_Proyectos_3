@@ -162,6 +162,7 @@ services:
   minio:
     container_name: minio
     image: quay.io/minio/minio:latest # server /data --console-address ":9001"
+    entrypoint: /bin/sh
     command: >
       -c "
       minio server /data --console-address ':9001' &
@@ -180,7 +181,7 @@ services:
       - ./minio:/data
 
     restart: unless-stopped
-
+  
   mlflow_serv:
     build:
       context: ./mlflow
