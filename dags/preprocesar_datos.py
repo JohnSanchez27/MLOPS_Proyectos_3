@@ -109,6 +109,18 @@ def almacenar_en_clean_data(df_train, df_val, df_test, batch_size=15000, random_
         
         df_train = df_train.sample(frac=1, random_state=random_state).reset_index(drop=True)
 
+        # Validar existencia y limpiar o crear tabla con estructura + batch_id
+        inspector = inspect(cleandatadb_engine)
+        tablas = inspector.get_table_names()
+        if "train_data" in tablas:
+            with cleandatadb_engine.begin() as conn:
+                print("Limpiando tabla train_data...")
+                conn.execute(text("DELETE FROM train_data"))
+        else:
+            print("Creando tabla train_data...")
+            df_train.head(0).assign(batch_id=0).to_sql("train_data", con=cleandatadb_engine, index=False, if_exists='replace')
+
+        # Insertar por batches con log claro
         total_batches = ceil(len(df_train) / batch_size)
 
         for batch_number in range(1, total_batches + 1):
@@ -117,10 +129,12 @@ def almacenar_en_clean_data(df_train, df_val, df_test, batch_size=15000, random_
             df_batch = df_train.iloc[start:end].copy()
 
             if df_batch.empty:
+                print(f"Batch {batch_number} está vacío. Se omite.")
                 continue
 
             df_batch["batch_id"] = batch_number
-            crear_y_reemplazar_si_existe(df_batch, "train_data", cleandatadb_engine)
+            df_batch.to_sql("train_data", con=cleandatadb_engine, index=False, if_exists='append')
+            print(f"Batch {batch_number}/{total_batches} insertado con {len(df_batch)} registros.")
 
         crear_y_reemplazar_si_existe(df_val, "val_data", cleandatadb_engine)
         crear_y_reemplazar_si_existe(df_test, "test_data", cleandatadb_engine)
@@ -151,11 +165,10 @@ with DAG(
     catchup=False,
     tags=['ETL']
 ) as dag:
-    
-    
+
+
     tarea_preprocesar = PythonOperator(
         task_id='preprocesar_datos',
         python_callable=ejecutar_preprocesamiento
     )
 
-    
