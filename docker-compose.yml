@@ -145,6 +145,14 @@ services:
       - ./models:/code/models
     depends_on:
       - mysql
+      - mlflow_serv
+      - minio
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow_serv:5000
+      MLFLOW_MODEL_NAME: mejor_modelo_diabetes
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: supersecret
     restart: always
 
 #  streamlit_front:

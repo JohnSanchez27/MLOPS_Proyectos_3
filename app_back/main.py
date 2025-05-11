@@ -9,13 +9,15 @@ from fastapi import FastAPI, HTTPException
 from datetime import datetime
 from sqlalchemy import create_engine, inspect, MetaData, Table, Column, Integer, Float, String, DateTime
 
-# Configuración del modelo desde MLflow
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_server:5000")
+# Configuración desde variables de entorno
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_serv:5000")
 MLFLOW_MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "mejor_modelo_diabetes")
 
+# Cargar modelo desde MLflow
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 model_uri = f"models:/{MLFLOW_MODEL_NAME}/Production"
-#model = mlflow.pyfunc.load_model(model_uri)
+model = mlflow.pyfunc.load_model(model_uri)
+
 
 # Inicialización de FastAPI
 app = FastAPI()
