@@ -106,7 +106,7 @@ with DAG(
     dag_id='cargar_datos',
     default_args=default_args,
     schedule_interval='@daily',  
-    start_date=datetime(2025,12, 1),  
+    start_date=datetime(2025,10, 1),  
     catchup=False,  # 
     tags=['Download_upload']
 ) as dag:
@@ -120,7 +120,7 @@ with DAG(
     dag_id='crear_bases_si_no_existen',
     default_args=default_args,
     schedule_interval='@daily',  
-    start_date=datetime(2025,12, 1),  
+    start_date=datetime.now(),  
     catchup=False,  # 
     tags=['Creacion Base']
 ) as dag:
