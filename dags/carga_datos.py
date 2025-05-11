@@ -107,7 +107,7 @@ with DAG(
     dag_id='cargar_datos',
     default_args=default_args,
     schedule_interval='@daily',  
-    start_date=datetime(2025,10, 1),  
+    start_date=datetime.now(),  
     catchup=False,  # 
     tags=['Download_upload']
 ) as dag:
