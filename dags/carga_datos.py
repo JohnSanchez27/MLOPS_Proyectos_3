@@ -116,11 +116,16 @@ with DAG(
         python_callable=descargar_datos
     )
 
-dag_adicional = DAG('crear_bases_si_no_existen', default_args=default_args, schedule_interval='@daily',concurrency=1)
- 
-# Tarea para obtener y almacenar los datos
-t1 = PythonOperator(
-    task_id='preprocessing_and_store',
-    python_callable=crear_bases_si_no_existen,
-    dag_adicional=dag_adicional,
-)
+with DAG(
+    dag_id='crear_bases_si_no_existen',
+    default_args=default_args,
+    schedule_interval='@daily',  
+    start_date=datetime(2025,12, 1),  
+    catchup=False,  # 
+    tags=['Creacion Base']
+) as dag:
+
+    tarea_descargar = PythonOperator(
+        task_id='verify_creation',
+        python_callable=crear_bases_si_no_existen
+    )
