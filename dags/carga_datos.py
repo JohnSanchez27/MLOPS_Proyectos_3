@@ -13,7 +13,8 @@ from sqlalchemy import create_engine, text, Table, Column, Integer, Float, MetaD
 
 PASSWORD = 'Compaq*87'
 def crear_bases_si_no_existen():
-    root_engine = create_engine(f'mysql+pymysql://root:{PASSWORD}@localhost:8082')
+    root_engine = create_engine(f'mysql+pymysql://root:{PASSWORD}@10.43.101.200:8082')
+    print("============Conectando a base de datos...")
     with root_engine.connect() as conn:
         conn.execute(text("CREATE DATABASE IF NOT EXISTS RAW_DATA"))
         conn.execute(text("CREATE DATABASE IF NOT EXISTS CLEAN_DATA"))
