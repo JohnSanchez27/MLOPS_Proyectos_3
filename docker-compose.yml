@@ -162,7 +162,7 @@ services:
   minio:
     container_name: minio
     image: quay.io/minio/minio:latest # server /data --console-address ":9001"
-    command: command: >
+    command: >
       -c "
       minio server /data --console-address ':9001' &
       sleep 10 &&
