@@ -12,43 +12,46 @@ from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Float, S
 
 # Configuración desde variables de entorno
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_serv:5000")
-MLFLOW_MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "mejor_modelo_diabetes")
+MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "mejor_modelo_diabetes")
 
-# 👇 Requiere acceso a MinIO para cargar artefactos desde s3://mlflows3
+# Configurar acceso a MinIO (S3-compatible)
 os.environ["MLFLOW_S3_ENDPOINT_URL"] = os.getenv("MLFLOW_S3_ENDPOINT_URL", "http://minio:9000")
 os.environ["AWS_ACCESS_KEY_ID"] = os.getenv("AWS_ACCESS_KEY_ID", "admin")
 os.environ["AWS_SECRET_ACCESS_KEY"] = os.getenv("AWS_SECRET_ACCESS_KEY", "supersecret")
 
-mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-client = MlflowClient()
+# Función para cargar el modelo desde el stage Production
+def load_model():
+    mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+    client = MlflowClient()
 
-model = None
-try:
-    model_uri = f"models:/{MLFLOW_MODEL_NAME}/Production"
+    model_versions = client.search_model_versions(f"name='{MODEL_NAME}'")
+    production_versions = [mv for mv in model_versions if mv.current_stage == 'Production']
+
+    if not production_versions:
+        raise ValueError(f"No hay versión en producción para el modelo: {MODEL_NAME}")
+
+    version = production_versions[0].version
+    model_uri = f"models:/{MODEL_NAME}/{version}"
     model = mlflow.pyfunc.load_model(model_uri)
-    print(f" Modelo cargado desde el Model Registry: {model_uri}")
-except Exception as e:
-    print(f"No se pudo cargar modelo registrado: {e}")
-    try:
-        runs = client.search_runs(experiment_ids=["1"], order_by=["start_time DESC"])
-        run = next((r for r in runs if r.data.tags.get("mlflow.runName") == "modelo_final"), None)
-        if run:
-            run_id = run.info.run_id
-            model_uri = f"runs:/{run_id}/modelo_final"
-            model = mlflow.pyfunc.load_model(model_uri)
-            print(f"Modelo cargado desde run_id={run_id}")
-        else:
-            print("No se encontró ningún run llamado 'modelo_final'")
-    except Exception as e2:
-        print(f"Error cargando el modelo desde run: {e2}")
-        model = None
+    print(f"Modelo '{MODEL_NAME}' versión {version} cargado correctamente.")
+    return model
 
-#
+# Intentar cargar el modelo
+try:
+    model = load_model()
+except Exception as e:
+    print(f"Error al cargar el modelo: {e}")
+    model = None
+
+# Inicializar FastAPI
 app = FastAPI()
-#
+
+# Conexión a la base de datos RAW_DATA
 rawdatadb_engine = connectionsdb[0]
-#
+
+# Esquema de entrada
 class InputData(BaseModel):
+
 
     race: str = Field(default="Caucasian")
     gender: str = Field(default="Female")
@@ -71,7 +74,7 @@ class InputData(BaseModel):
     examide: str = Field(default="No")
     citoglipton: str = Field(default="No")
 
-
+# Endpoint de predicción
 @app.post("/predict")
 
 def predict(data: InputData):
@@ -85,7 +88,8 @@ def predict(data: InputData):
 
         input_df = pd.DataFrame([data.dict()])
         prediction = model.predict(input_df)
-        try: 
+
+        try:
             probability = model.predict_proba(input_df)[0][1]
         except AttributeError:
             probability = None
@@ -95,7 +99,7 @@ def predict(data: InputData):
         input_df["prediction_proba"] = float(probability) if probability is not None else None
         input_df["prediction_timestamp"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-
+        # Crear tabla si no existe
         inspector = inspect(rawdatadb_engine)
         if "predictions" not in inspector.get_table_names():
             metadata = MetaData()
@@ -113,7 +117,8 @@ def predict(data: InputData):
 
             Table("predictions", metadata, *columns)
             metadata.create_all(rawdatadb_engine)
-        
+
+        # Guardar en base de datos
         input_df.to_sql("predictions", con=rawdatadb_engine, if_exists='append', index=False)
 
         return {
