@@ -178,21 +178,12 @@ with DAG(
     catchup=False,
     tags=['ETL', 'modelo']
 ) as dag:
+    
 
-    esperar_preprocesamiento = ExternalTaskSensor(
-        task_id='esperar_preprocesamiento',
-        external_dag_id='preprocesar_datos',
-        external_task_id='preprocesar_datos',
-        mode='poke',
-        timeout=600,
-        poke_interval=30
-    )
 
     entrenar_modelos = PythonOperator(
         task_id='train_model_all_batches',
         python_callable=train_all_batches_and_select_best
     )
 
-    esperar_preprocesamiento >> entrenar_modelos
-
-
+    
