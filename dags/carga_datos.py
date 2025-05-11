@@ -21,6 +21,8 @@ def crear_bases_si_no_existen():
 
 rawdatadb_engine = connectionsdb[0]
 
+
+
 def descargar_datos():
 
     ruta_datos = './data/Diabetes'
@@ -113,3 +115,12 @@ with DAG(
         task_id='descargar_datos',
         python_callable=descargar_datos
     )
+
+dag_adicional = DAG('crear_bases_si_no_existen', default_args=default_args, schedule_interval='@daily',concurrency=1)
+ 
+# Tarea para obtener y almacenar los datos
+t1 = PythonOperator(
+    task_id='preprocessing_and_store',
+    python_callable=crear_bases_si_no_existen,
+    dag_adicional=dag_adicional,
+)
