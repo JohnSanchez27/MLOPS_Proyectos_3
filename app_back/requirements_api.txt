@@ -6,4 +6,5 @@ uvicorn
 pymysql
 sqlalchemy
 pydantic
+scikit-learn==1.2.2
 
