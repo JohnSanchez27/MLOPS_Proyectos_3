@@ -1,7 +1,9 @@
+mlflow
+boto3
+pandas
 fastapi
 uvicorn
-pydantic
-pandas
-mlflow==2.3.0
+
 sqlalchemy
-pymysql
+pydantic
+
