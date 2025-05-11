@@ -14,6 +14,11 @@ from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Float, S
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_serv:5000")
 MLFLOW_MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "mejor_modelo_diabetes")
 
+# 👇 Requiere acceso a MinIO para cargar artefactos desde s3://mlflows3
+os.environ["MLFLOW_S3_ENDPOINT_URL"] = os.getenv("MLFLOW_S3_ENDPOINT_URL", "http://minio:9000")
+os.environ["AWS_ACCESS_KEY_ID"] = os.getenv("AWS_ACCESS_KEY_ID", "admin")
+os.environ["AWS_SECRET_ACCESS_KEY"] = os.getenv("AWS_SECRET_ACCESS_KEY", "supersecret")
+
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 client = MlflowClient()
 
@@ -21,7 +26,7 @@ model = None
 try:
     model_uri = f"models:/{MLFLOW_MODEL_NAME}/Production"
     model = mlflow.pyfunc.load_model(model_uri)
-    print(f"Modelo cargado desde el Model Registry: {model_uri}")
+    print(f" Modelo cargado desde el Model Registry: {model_uri}")
 except Exception as e:
     print(f"No se pudo cargar modelo registrado: {e}")
     try:
