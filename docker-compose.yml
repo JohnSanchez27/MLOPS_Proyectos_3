@@ -162,7 +162,7 @@ services:
   minio:
     container_name: minio
     image: quay.io/minio/minio:latest
-    #command: server /data --console-address ":9001"
+    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: admin
       MINIO_ROOT_PASSWORD: supersecret
@@ -171,13 +171,7 @@ services:
       - "8083:9001"   # Consola web
     volumes:
       - ./minio:/data
-    command: >
-      /bin/sh -c "
-      minio server /data --console-address ':9001' &
-      sleep 10 &&
-      mc alias set local http://localhost:9000 admin supersecret &&
-      mc mb -p local/mlflows3 || true &&
-      tail -f /dev/null"
+
     restart: unless-stopped
 
   mlflow_serv:
