@@ -1,17 +1,15 @@
+import streamlit as st
+import requests
 import sys
 import os
 import pandas as pd
-import streamlit as st
-import requests
-# Configurar página y # st.set_page_config(page_title="Predicción de Reingreso", layout="wide")
-st.title("🩺 Sistema de Predicción de Reingreso Hospitalario")
+#
 
-# URL del endpoint FastAPI
+st.set_page_config(page_title="Predicción de Reingreso", layout="wide")
+st.title("Sistema de Predicción de Reingreso Hospitalario")
 API_URL = "http://10.43.101.200:8000/predict"
 
-
-# Sección de formulario
-st.markdown("## 🧾 Formulario de Evaluación del Paciente")
+st.markdown("## Formulario de Evaluación del Paciente")
 with st.form("formulario_prediccion"):
     col1, col2, col3 = st.columns(3)
 
@@ -41,7 +39,7 @@ with st.form("formulario_prediccion"):
         examide = st.selectbox("Uso de examide", ["No", "Steady", "Up", "Down"])
         citoglipton = st.selectbox("Uso de citoglipton", ["No", "Steady", "Up", "Down"])
 
-    submitted = st.form_submit_button("🔍 Predecir")
+    submitted = st.form_submit_button("Predecir")
 
 if submitted:
 
@@ -80,7 +78,11 @@ if submitted:
         if resultado["probability"] is not None:
             st.metric("Probabilidad de readmisión", f"{resultado['probability'] * 100:.2f}%")
         else:
-            st.warning(" El modelo no retornó probabilidad.")
+            st.warning("El modelo no retornó probabilidad.")
+
+        if "model_name" in resultado and "model_version" in resultado:
+            st.write(f"Modelo utilizado: {resultado['model_name']} (versión {resultado['model_version']})")
 
     except requests.exceptions.RequestException as e:
-        st.error(f" Error al conectar con la API: {e}")
+        st.error(f"Error al conectar con la API: {e}")
+
