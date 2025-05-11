@@ -172,6 +172,20 @@ def train_all_batches_and_select_best(metric="val_f1"):
             modelo_final = joblib.load(final_model_path)
             mlflow.sklearn.log_model(modelo_final, artifact_path="modelo_final")
             print("Modelo final registrado en MLflow.")
+        # Registrar el modelo en el Model Registry
+        result = mlflow.register_model(
+            model_uri="runs:/" + mlflow.active_run().info.run_id + "/modelo_final",
+            name="mejor_modelo_diabetes"
+        )
+
+        # Opcional: moverlo al stage "Production"
+        client = mlflow.tracking.MlflowClient()
+        client.transition_model_version_stage(
+            name="mejor_modelo_diabetes",
+            version=result.version,
+            stage="Production",
+            archive_existing_versions=True
+        )
     else:
         print(f"No se encontró el archivo {best_file} para copiarlo como modelo final.")
 
