@@ -32,7 +32,7 @@ def load_model():
 
     version = production_versions[0].version
     model_uri = f"models:/{MODEL_NAME}/{version}"
-    model = mlflow.pyfunc.load_model(model_uri)
+    model = mlflow.sklearn.load_model(model_uri)
     print(f"Modelo '{MODEL_NAME}' versión {version} cargado correctamente.")
     return model
 
