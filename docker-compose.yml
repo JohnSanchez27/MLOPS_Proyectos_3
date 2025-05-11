@@ -132,30 +132,30 @@ services:
       retries: 10
     restart: always
 
-  api_backend:
-    build:
-      context: .                  # ← importante
-      dockerfile: app_back/dockerfile_api
-    container_name: fastapi_app
-    ports:
-     - "8000:8000"
-    volumes:
-      - ./models:/code/models
-    depends_on:
-      - mysql
-    restart: always
+#  api_backend:
+#    build:
+#      context: .                  # ← importante
+#      dockerfile: app_back/dockerfile_api
+#    container_name: fastapi_app
+#    ports:
+#     - "8000:8000"
+#    volumes:
+#      - ./models:/code/models
+#    depends_on:
+#      - mysql
+#    restart: always
 
-  streamlit_front:
-    build:
-      context: .
-      dockerfile: app_front/dockerfile_app
-    container_name: streamlit_front
-    ports:
-      - "8501:8501"
-    depends_on:
-      - api_backend
-      - mysql
-    restart: always
+#  streamlit_front:
+#    build:
+#      context: .
+#      dockerfile: app_front/dockerfile_app
+#    container_name: streamlit_front
+#    ports:
+#      - "8501:8501"
+#    depends_on:
+#     - api_backend
+#      - mysql
+#    restart: always
 
   minio:
     container_name: minio
