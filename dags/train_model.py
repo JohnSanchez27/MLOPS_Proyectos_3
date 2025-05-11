@@ -84,7 +84,7 @@ def train_model(batch_id: int):
     ])
 
 
-    mlflow.set_tracking_uri("http://mlflow_server:5000")
+    mlflow.set_tracking_uri("http://mlflow_serv:5000")
     mlflow.set_experiment("experiment_diabetes_batches")
 
     with mlflow.start_run(run_name=f"batch_{batch_id}"):
