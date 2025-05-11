@@ -147,7 +147,7 @@ with DAG(
     dag_id='preprocesar_datos',
     default_args=default_args,
     schedule_interval=None,
-    #start_date=datetime(2025, 5, 1),
+    start_date=datetime(2025, 12, 1),
     catchup=False,
     tags=['ETL']
 ) as dag:
