@@ -3,7 +3,7 @@ boto3
 pandas
 fastapi
 uvicorn
-
+pymysql
 sqlalchemy
 pydantic
 
