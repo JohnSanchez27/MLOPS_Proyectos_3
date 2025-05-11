@@ -1,26 +1,43 @@
 import os
 import sys
 import pandas as pd
+import mlflow
 import mlflow.pyfunc
+from mlflow.tracking import MlflowClient
 from pydantic import BaseModel, Field
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 
-
-from datetime import datetime
-from sqlalchemy import create_engine, inspect, MetaData, Table, Column, Integer, Float, String, DateTime
-
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Float, String, DateTime, inspect
 # Configuración desde variables de entorno
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_serv:5000")
-MLFLOW_MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "mejor_modelo_diabetes")
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_serv:5000") # 
 
-# Cargar modelo desde MLflow
+
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-model_uri = f"models:/{MLFLOW_MODEL_NAME}/Production"
-#model = mlflow.pyfunc.load_model(model_uri)
+# Cargar modelo desde el último run llamado "modelo_final"
 
+model = None
+try:
+    client = MlflowClient()
+    runs = client.search_runs(
+        experiment_ids=["1"],
+        filter_string="tags.mlflow.runName = 'modelo_final'",
+        order_by=["start_time DESC"],
+        max_results=1
+    )
+    if runs:
+        run_id = runs[0].info.run_id
+        model_uri = f"runs:/{run_id}/modelo_final"
+        model = mlflow.pyfunc.load_model(model_uri)
+        print(f"Modelo cargado desde run_id={run_id}")
+    else:
+        print("No se encontró ningún run llamado 'modelo_final'")
+except Exception as e:
+    print(f"Error cargando el modelo desde MLflow: {e}")
 
 # Inicialización de FastAPI
 app = FastAPI()
+
 # Conexión a base de datos RAW_DATA
 from connections import connectionsdb
 rawdatadb_engine = connectionsdb[0]
@@ -51,6 +68,12 @@ class InputData(BaseModel):
 # Endpoint de predicción
 @app.post("/predict")
 def predict(data: InputData):
+    if model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Modelo no disponible. No se encontró un run 'modelo_final' en MLflow."
+        )
+
     try:
 
         input_df = pd.DataFrame([data.dict()])
@@ -95,7 +118,7 @@ def predict(data: InputData):
             "prediction": int(prediction[0]),
             "probability": float(probability) if probability is not None else None
         }
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
