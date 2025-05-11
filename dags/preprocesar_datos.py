@@ -151,20 +151,11 @@ with DAG(
     catchup=False,
     tags=['ETL']
 ) as dag:
-
-    # Sensor para esperar la carga de datos
-    esperar_carga = ExternalTaskSensor(
-        task_id='esperar_dag_carga',
-        external_dag_id='cargar_datos',         # dag_id del DAG de carga
-        external_task_id='descargar_datos',     # task_id que debe completarse
-        mode='poke',
-        timeout=600,
-        poke_interval=30
-    )
-
+    
+    
     tarea_preprocesar = PythonOperator(
         task_id='preprocesar_datos',
         python_callable=ejecutar_preprocesamiento
     )
 
-    esperar_carga >> tarea_preprocesar
+    
