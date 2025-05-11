@@ -54,7 +54,9 @@ x-airflow-common:
   build: .
   environment:
     &airflow-common-env
-
+    MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+    AWS_ACCESS_KEY_ID: admin
+    AWS_SECRET_ACCESS_KEY: supersecret
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
 
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -180,7 +182,7 @@ services:
       - "8084:5000"
     command: >
       mlflow server
-      --backend-store-uri mysql+pymysql://root:Compaq*87@10.43.101.200:3306/mlflow
+      --backend-store-uri mysql+pymysql://root:Compaq*87@mysql:8082/mlflow
       --default-artifact-root s3://mlflows3
       --host 0.0.0.0
       --port 5000
