@@ -173,9 +173,9 @@ default_args = {
 with DAG(
     dag_id='entrenar_modelo',
     default_args=default_args,
-    schedule_interval=None,
-    start_date=datetime(2025, 5, 1),
-    catchup=False,
+    #schedule_interval=None,
+    #start_date=datetime(2025, 5, 1),
+    #catchup=False,
     tags=['ETL', 'modelo']
 ) as dag:
 
