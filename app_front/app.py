@@ -7,7 +7,7 @@ import requests
 st.title("🩺 Sistema de Predicción de Reingreso Hospitalario")
 
 # URL del endpoint FastAPI
-API_URL = "http://localhost:8000/predict"
+API_URL = "http://10.43.101.200:8000/predict"
 
 
 # Sección de formulario
