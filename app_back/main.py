@@ -7,43 +7,44 @@ from mlflow.tracking import MlflowClient
 from pydantic import BaseModel, Field
 from datetime import datetime
 from fastapi import FastAPI, HTTPException
-
+from connections import connectionsdb
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Float, String, DateTime, inspect
-# Configuración desde variables de entorno
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_serv:5000") # 
 
+# Configuración desde variables de entorno
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow_serv:5000")
+MLFLOW_MODEL_NAME = os.getenv("MLFLOW_MODEL_NAME", "mejor_modelo_diabetes")
 
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
-# Cargar modelo desde el último run llamado "modelo_final"
+client = MlflowClient()
 
 model = None
 try:
-    client = MlflowClient()
-    runs = client.search_runs(
-        experiment_ids=["1"],
-        filter_string="tags.mlflow.runName = 'modelo_final'",
-        order_by=["start_time DESC"],
-        max_results=1
-    )
-    if runs:
-        run_id = runs[0].info.run_id
-        model_uri = f"runs:/{run_id}/modelo_final"
-        model = mlflow.pyfunc.load_model(model_uri)
-        print(f"Modelo cargado desde run_id={run_id}")
-    else:
-        print("No se encontró ningún run llamado 'modelo_final'")
+    model_uri = f"models:/{MLFLOW_MODEL_NAME}/Production"
+    model = mlflow.pyfunc.load_model(model_uri)
+    print(f"Modelo cargado desde el Model Registry: {model_uri}")
 except Exception as e:
-    print(f"Error cargando el modelo desde MLflow: {e}")
+    print(f"No se pudo cargar modelo registrado: {e}")
+    try:
+        runs = client.search_runs(experiment_ids=["1"], order_by=["start_time DESC"])
+        run = next((r for r in runs if r.data.tags.get("mlflow.runName") == "modelo_final"), None)
+        if run:
+            run_id = run.info.run_id
+            model_uri = f"runs:/{run_id}/modelo_final"
+            model = mlflow.pyfunc.load_model(model_uri)
+            print(f"Modelo cargado desde run_id={run_id}")
+        else:
+            print("No se encontró ningún run llamado 'modelo_final'")
+    except Exception as e2:
+        print(f"Error cargando el modelo desde run: {e2}")
+        model = None
 
-# Inicialización de FastAPI
+#
 app = FastAPI()
-
-# Conexión a base de datos RAW_DATA
-from connections import connectionsdb
+#
 rawdatadb_engine = connectionsdb[0]
-
-# Esquema de entrada
+#
 class InputData(BaseModel):
+
     race: str = Field(default="Caucasian")
     gender: str = Field(default="Female")
     age: int = Field(default=65)
@@ -65,32 +66,31 @@ class InputData(BaseModel):
     examide: str = Field(default="No")
     citoglipton: str = Field(default="No")
 
-# Endpoint de predicción
+
 @app.post("/predict")
+
 def predict(data: InputData):
     if model is None:
         raise HTTPException(
             status_code=503,
-            detail="Modelo no disponible. No se encontró un run 'modelo_final' en MLflow."
+            detail="Modelo no disponible. No se pudo cargar desde MLflow."
         )
-
+    
     try:
 
         input_df = pd.DataFrame([data.dict()])
         prediction = model.predict(input_df)
-
-        # Verificar si el modelo soporta predict_proba
-        try:
+        try: 
             probability = model.predict_proba(input_df)[0][1]
         except AttributeError:
             probability = None
 
-        # Agregar columnas para guardar
+
         input_df["predicted_readmitted"] = int(prediction[0])
         input_df["prediction_proba"] = float(probability) if probability is not None else None
         input_df["prediction_timestamp"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # Crear tabla si no existe
+
         inspector = inspect(rawdatadb_engine)
         if "predictions" not in inspector.get_table_names():
             metadata = MetaData()
@@ -108,9 +108,7 @@ def predict(data: InputData):
 
             Table("predictions", metadata, *columns)
             metadata.create_all(rawdatadb_engine)
-
-
-        # Guardar en la base de datos
+        
         input_df.to_sql("predictions", con=rawdatadb_engine, if_exists='append', index=False)
 
         return {
@@ -121,4 +119,3 @@ def predict(data: InputData):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
