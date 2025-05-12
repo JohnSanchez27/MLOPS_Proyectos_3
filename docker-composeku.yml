@@ -10,10 +10,7 @@ services:
       - "8082:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
-#    networks:
-#      - networkp3-2025
-    #restart: always
+      
 
   apibackend:
     image: johnsanchez27/fastapi:latest
@@ -27,7 +24,7 @@ services:
  #     - mlflow_serv
       - minio
     environment:
-      MLFLOW_TRACKING_URI: http://mlflow_serv:8084
+      MLFLOW_TRACKING_URI: http://host.docker.internal:8084
       MLFLOW_MODEL_NAME: mejor_modelo_diabetes
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       AWS_ACCESS_KEY_ID: admin
@@ -39,7 +36,7 @@ services:
         limits:
           cpus: "2"
           memory: "512M"
-    #restart: always
+
 
   minio:
     container_name: minio
@@ -61,8 +58,7 @@ services:
       - "8083:9001"   # Consola web
     volumes:
       - ./minio:/data
-#    networks:
-#      - networkp3-2025
+
 
 
 
