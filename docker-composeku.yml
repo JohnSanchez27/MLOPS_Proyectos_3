@@ -10,14 +10,13 @@ services:
       - "8082:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-    #  - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
-
-    networks:
-      - networkp3-2025
+      - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
+#    networks:
+#      - networkp3-2025
     #restart: always
 
   apibackend:
-    image: johnsanchez27/fastapi
+    image: johnsanchez27/fastapi:latest
     container_name: fastapi_app
     ports:
      - "8000:8000"
@@ -28,7 +27,7 @@ services:
  #     - mlflow_serv
       - minio
     environment:
-      MLFLOW_TRACKING_URI: http://10.43.101.200:8084
+      MLFLOW_TRACKING_URI: http://mlflow_serv:8084
       MLFLOW_MODEL_NAME: mejor_modelo_diabetes
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       AWS_ACCESS_KEY_ID: admin
@@ -62,8 +61,8 @@ services:
       - "8083:9001"   # Consola web
     volumes:
       - ./minio:/data
-    networks:
-      - networkp3-2025
+#    networks:
+#      - networkp3-2025
 
 
 
@@ -71,7 +70,7 @@ volumes:
   mysql_data:
 
 
-networks:
-  networkp3-2025:
-    external: true
-    name: networkp3-2025
+#networks:
+#  networkp3-2025:
+#    external: true
+#    name: networkp3-2025
