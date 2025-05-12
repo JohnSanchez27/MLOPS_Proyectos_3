@@ -78,12 +78,6 @@ volumes:
 
 
 networks:
-  #netinference:
-  networkp3-2025:
-    name: proyecto32025
-    external: true
-
-#networks:
-#  networkp3:
-#      name: proyecto3_2025
-#      external: true
+      default:
+        external: true
+        name: networkp3-2025
