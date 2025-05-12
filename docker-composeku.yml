@@ -10,7 +10,7 @@ services:
       - "8082:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
+    #  - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
