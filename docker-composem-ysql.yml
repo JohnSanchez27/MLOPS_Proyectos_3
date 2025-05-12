@@ -1,23 +1,28 @@
 version: '3.8'
 services: 
 
-  mysql:
-    image: mysql:latest
-    container_name: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: Compaq*87
+  apibackend:
+    build:
+      context: .                  # ← importante
+      dockerfile: app_back/dockerfile_api
+    container_name: fastapi_app
     ports:
-      - "8082:3306"
+     - "8000:8000"
     volumes:
-      - mysql_data:/var/lib/mysql
-    #  - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
-    #healthcheck:
-    #  test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-    #  interval: 10s
-    #  timeout: 5s
-    #  retries: 10
+      - ./models:/code/models
+    environment:
+      MLFLOW_TRACKING_URI: http://10.43.101.200:8084
+      MLFLOW_MODEL_NAME: mejor_modelo_diabetes
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: supersecret
     networks:
       - networkp3-2025
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: "512M"
     #restart: always
 
 networks:

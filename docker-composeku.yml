@@ -3,7 +3,7 @@ services:
 
   mysql:
     image: mysql:latest
-  # container_name: mysql
+    container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: Compaq*87
     ports:
@@ -11,11 +11,7 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     #  - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
+    
     networks:
       - networkp3-2025
     #restart: always
