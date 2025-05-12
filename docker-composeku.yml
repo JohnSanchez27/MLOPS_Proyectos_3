@@ -2,7 +2,7 @@ version: '3.8'
 services: 
 
   mysql:
-    image: mysql:8.0
+    image: mysql:latest
   # container_name: mysql
     environment:
       MYSQL_ROOT_PASSWORD: Compaq*87
@@ -30,9 +30,9 @@ services:
     volumes:
       - ./models:/code/models
     depends_on:
-      - mysql
+ #     - mysql
  #     - mlflow_serv
-      - minio
+ #     - minio
     environment:
       MLFLOW_TRACKING_URI: http://10.43.101.200:8084
       MLFLOW_MODEL_NAME: mejor_modelo_diabetes
