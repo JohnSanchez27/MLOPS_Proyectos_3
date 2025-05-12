@@ -29,7 +29,7 @@ services:
      - "8000:8000"
     volumes:
       - ./models:/code/models
-    depends_on:
+#    depends_on:
  #     - mysql
  #     - mlflow_serv
  #     - minio
