@@ -1,3 +1,4 @@
+version: '3.8'
 services: 
 
   mysql:
@@ -15,6 +16,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+    networks:
+      - networkp3-2025sss
     restart: always
 
   api_backend:
@@ -36,6 +39,8 @@ services:
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       AWS_ACCESS_KEY_ID: admin
       AWS_SECRET_ACCESS_KEY: supersecret
+    networks:
+      - networkp3-2025
     deploy:
       resources:
         limits:
@@ -63,8 +68,21 @@ services:
       - "8083:9001"   # Consola web
     volumes:
       - ./minio:/data
+    networks:
+      - networkp3-2025
 
     restart: unless-stoppe
 
 volumes:
   mysql_data:
+
+
+networks:
+  #netinference:
+  networkp3-2025:
+    external: true
+
+#networks:
+#  networkp3:
+#      name: proyecto3_2025
+#      external: true
