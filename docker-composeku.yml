@@ -1,0 +1,70 @@
+services: 
+
+  mysql:
+    image: mysql:8.0
+  # container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Compaq*87
+    ports:
+      - "8082:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  api_backend:
+    build:
+      context: .                  # ← importante
+      dockerfile: app_back/dockerfile_api
+    container_name: fastapi_app
+    ports:
+     - "8000:8000"
+    volumes:
+      - ./models:/code/models
+    depends_on:
+      - mysql
+ #     - mlflow_serv
+      - minio
+    environment:
+      MLFLOW_TRACKING_URI: http://10.43.101.200:8084
+      MLFLOW_MODEL_NAME: mejor_modelo_diabetes
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: supersecret
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 500M
+    restart: always
+
+  minio:
+    container_name: minio
+    image: quay.io/minio/minio:latest # server /data --console-address ":9001"
+    entrypoint: /bin/sh
+    command: >
+      -c "
+      minio server /data --console-address ':9001' &
+      sleep 10 &&
+      mc alias set local http://localhost:9000 admin supersecret &&
+      mc mb -p local/mlflows3 || true &&
+      tail -f /dev/null
+      "
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: supersecret
+    ports:
+      - "9000:9000"   # API de objetos
+      - "8083:9001"   # Consola web
+    volumes:
+      - ./minio:/data
+
+    restart: unless-stoppe
+
+volumes:
+  mysql_data:
