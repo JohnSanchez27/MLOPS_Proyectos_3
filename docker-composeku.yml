@@ -18,7 +18,7 @@ services:
       retries: 10
     networks:
       - networkp3-2025
-    restart: always
+    #restart: always
 
   apibackend:
     build:
@@ -46,7 +46,7 @@ services:
         limits:
           cpus: "2"
           memory: "512M"
-    restart: always
+    #restart: always
 
   minio:
     container_name: minio
