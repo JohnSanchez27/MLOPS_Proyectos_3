@@ -7,7 +7,7 @@ import pandas as pd
 
 st.set_page_config(page_title="Predicción de Reingreso", layout="wide")
 st.title("Sistema de Predicción de Reingreso Hospitalario")
-API_URL = "http://api_backend:8000/predict"
+API_URL = "http://apibackend:8000/predict"
 
 st.markdown("## Formulario de Evaluación del Paciente")
 with st.form("formulario_prediccion"):

@@ -127,7 +127,7 @@ services:
 #    volumes:
 #      - mysql_data:/var/lib/mysql
 #      - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
-#    healthcheck:
+#    healthcheck: 
 #      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
 #      interval: 10s
 #      timeout: 5s
@@ -204,13 +204,13 @@ services:
       - "8084:5000"
     command: >
       mlflow server
-      --backend-store-uri mysql+pymysql://root:Compaq*87@10.43.101.200:3306/mlflow
+      --backend-store-uri mysql+pymysql://root:Compaq*87@mysql/mlflow
       --default-artifact-root s3://mlflows3
       --host 0.0.0.0
       --port 5000
       --serve-artifacts
     environment:
-      MLFLOW_S3_ENDPOINT_URL: http://10.43.101.200:9000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       AWS_ACCESS_KEY_ID: admin
       AWS_SECRET_ACCESS_KEY: supersecret
     depends_on:

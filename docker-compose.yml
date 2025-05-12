@@ -134,7 +134,7 @@ services:
       retries: 10
     restart: always
 
-  api_backend:
+  apibackend:
     build:
       context: .                  # ← importante
       dockerfile: app_back/dockerfile_api
