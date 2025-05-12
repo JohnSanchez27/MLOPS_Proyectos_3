@@ -11,24 +11,22 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     #  - ./mlflow/init.sql:/docker-entrypoint-initdb.d/init.sql
-    
+
     networks:
       - networkp3-2025
     #restart: always
 
   apibackend:
-    build:
-      context: .                  # ← importante
-      dockerfile: app_back/dockerfile_api
+    image: johnsanchez27/fastapi
     container_name: fastapi_app
     ports:
      - "8000:8000"
     volumes:
       - ./models:/code/models
-#    depends_on:
- #     - mysql
+    depends_on:
+      - mysql
  #     - mlflow_serv
- #     - minio
+      - minio
     environment:
       MLFLOW_TRACKING_URI: http://10.43.101.200:8084
       MLFLOW_MODEL_NAME: mejor_modelo_diabetes
