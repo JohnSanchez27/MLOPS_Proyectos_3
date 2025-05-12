@@ -153,6 +153,11 @@ services:
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       AWS_ACCESS_KEY_ID: admin
       AWS_SECRET_ACCESS_KEY: supersecret
+    deploy:
+      resources:
+        limits:
+          cpus: 2
+          memory: 500M
     restart: always
 
   streamlit_front:
