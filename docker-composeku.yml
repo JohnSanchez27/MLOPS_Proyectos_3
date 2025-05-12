@@ -71,7 +71,7 @@ services:
     networks:
       - networkp3-2025
 
-    restart: unless-stoppe
+
 
 volumes:
   mysql_data:
