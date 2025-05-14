@@ -324,3 +324,8 @@ Por otro lado, Grafana se utilizó para visualizar las métricas recopiladas por
 ## Rendimiento
 
 Para monitorear el rendimiento de utilizo locust para realziar pruebas de carga y rendimiento con el fin de simular la interacción de múltiples usuarios con los servicios desplegados, en particular con FastAPI. Mediante Locust, se pudieron definir escenarios personalizados que simulan el comportamiento de los usuarios, permitiendo evaluar cómo la aplicación maneja el tráfico y las solicitudes bajo condiciones de alta demanda. Durante las pruebas, se monitorean métricas clave como el tiempo de respuesta, la tasa de éxito y el número de solicitudes por segundo, lo que permitió identificar posibles cuellos de botella y optimizar el rendimiento de los servicios. Esta herramienta resultó esencial para garantizar que la infraestructura del proyecto pueda escalar eficientemente y ofrecer una experiencia fluida incluso en escenarios de alta carga.
+
+![image](https://github.com/user-attachments/assets/dc2cbd94-6b2c-494b-b37c-a7eeb611437a)
+
+![image](https://github.com/user-attachments/assets/b7a0d17d-11dc-4508-96d3-67376f16b26b)
+
