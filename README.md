@@ -1,4 +1,4 @@
-# Proyecto 3 - MLOps (Fase Local)
+# Proyecto 3 - MLOps
 
 Este proyecto implementa una solución completa de MLOps que automatiza el proceso de entrenamiento, despliegue y consumo de un modelo de machine learning para predecir la probabilidad de que un paciente sea readmitido en un hospital. Utiliza un enfoque modular basado en contenedores con Docker y herramientas modernas como Apache Airflow, MLflow, MinIO, FastAPI y Streamlit.
 
@@ -240,4 +240,14 @@ Una vez entrenado el modelo y cargado en MLflow, puedes hacer predicciones desde
 
 
 ## ✅ Despliegue con kubernetes
+
+A continuación, se detallará el proceso paso a paso para la implementación de la infraestructura del proyecto utilizando Kubernetes. Es importante destacar que, en este caso, se optó por una arquitectura híbrida, ya que no todos los servicios fueron desplegados bajo Kubernetes. En particular, se utilizaron Kubernetes únicamente para desplegar los servicios de FastAPI y Streamlit.
+
+Inicialmente, la intención era montar los servicios de MiniO y MySQL también bajo Kubernetes. Sin embargo, durante el proceso de configuración y despliegue, se encontraron diversos desafíos técnicos que impidieron exponer estos servicios de manera adecuada dentro del entorno de Kubernetes. A pesar de los esfuerzos por resolver estos problemas, no se logró una configuración estable que permitiera la exposición correcta de los servicios mencionados. Por tal razon se opto por un modelo hibrido donde los demas servicios fueron orquestados con docker compose (Airflow, MlFlow, Minio y  MySQL) 
+
+Antes de que nada se creron dos imagenes en Docker Hub, una imagen para FastAPI y otra para Streamlit como se muestran en las siguientes imagenes:
+
+![image](https://github.com/user-attachments/assets/7f320c72-7c76-4f98-a231-4120dc9c454a)
+
+
 
