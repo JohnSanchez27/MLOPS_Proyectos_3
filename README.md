@@ -249,5 +249,55 @@ Antes de que nada se creron dos imagenes en Docker Hub, una imagen para FastAPI 
 
 ![image](https://github.com/user-attachments/assets/7f320c72-7c76-4f98-a231-4120dc9c454a)
 
+## Instalación
 
+Para kubernetes se implemento microk8s el cual es necesario para levantar los nodos y pods necesarios, para asegurarnos que la infraestructura funcionara correctamente lo primero que se hizo fue realizar la instalacion siguiendo los siguientes pasos: Instalar Microk8s on Linux
+
+```bash
+    sudo snap install microk8s --classic
+```
+Validar el estado, revisar cuando kubernetes inicie y este listo
+
+```bash
+    microk8s status --wait-ready
+```
+Empezar a usar kubernetes
+
+```bash
+microk8s kubectl get all --all-namespaces
+```
+
+Acceder al dashboard de Kubernetes
+
+```bash
+microk8s dashboard-proxy
+```
+### Despliegue hibrido 
+
+Una vez completada la instalación de MicroK8s, se crearon dos archivos Docker Compose: uno para los servicios de Airflow, MLflow, MinIO y MySQL, y otro para los servicios de FastAPI y Streamlit.El proceso de despliegue se realizó en dos fases: primero se desplegó el archivo docker-compose.yml, y posteriormente, se convirtió el archivo docker-composeku.yml a configuraciones de Kubernetes. A continuación, se detallan los pasos ejecutados en el proceso.
+
+**Despliegue de docker-composeser.yml:**
+
+![image](https://github.com/user-attachments/assets/3f923151-ba81-4522-a002-f022e2828728)
+
+**Pasar de docker-compose a kubernetes**
+
+En el proceso de migración de un archivo Docker Compose a Kubernetes, se utilizó el comando kompose convert para convertir el archivo docker-composeku.yml a una serie de archivos de configuración YAML.
+
+```bash
+    kompose convert -f docker-composeku.yml -o kubecompose.yml/ --volumes hostPath
+```
+![image](https://github.com/user-attachments/assets/3b54a142-6992-42c9-b7ee-d602d3eb0291)
+
+asi mismo se aplicaron las  configuraciones agregando cada uno de los archivos de configuración creados, separados por coma
+
+![image](https://github.com/user-attachments/assets/5b62c8e8-b84c-4ec1-a4ce-b4a585618cff)
+
+Posteriormente se valida el estado de todo con el fin de verificar que los serviucios se encuentren desplegados correctamente.
+
+![image](https://github.com/user-attachments/assets/80fb0622-190e-40b6-a115-cab884eb053d)
+
+Para ver especificamente los servicios expuestos en la siguiente imagen se pueden ver lo nodos con los pods corriendo correctamente. 
+
+![image](https://github.com/user-attachments/assets/0a97a502-0464-4d92-a024-b329478c6511)
 
