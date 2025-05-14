@@ -71,14 +71,21 @@ Proyecto_3/
 │
 ├── plugins/                               # (Opcional) Plugins de Airflow si se utilizan
 │
-├── docker-compose.yml                     # Orquestación de servicios: Airflow, MLflow, MinIO, MySQL, etc.
+├── prometheus/                            # Observabilidad con prometheus y graphana
+|   └── prometheus.yml
+|   └── prometheus_data/
+|
+├── docker-compose.yml                     # Orquestación de servicios: Airflow, MLflow, MinIO, MySQL, StreamLit y FastApi
+├── docker-composeser.yml                  # Orquestación de servicios: Airflow, MLflow, MinIO y MySQL
+├── docker-composesku.yml                  # Dcoker compose utilizado para pasar a kubernetes
+├── docker-compose-monitoreo.yml           # Dcoker compose utilizado para obervabilidad con prometeus y graphana
 ├── dockerfile                             # Dockerfile base del entorno
 ├── requirements.txt                       # Dependencias globales del proyecto
 └── README.md                              # Documentación del proyecto
 
 ```
 
-## ✅ Funcionalidad Actual
+## ✅ Funcionalidad Con Docker-Compose.yml
 
 
 - **Carga de datos**  
@@ -239,7 +246,7 @@ Esto descargará el dataset, lo insertará en la base RAW_DATA, realizará la tr
 Una vez entrenado el modelo y cargado en MLflow, puedes hacer predicciones desde: Streamlit: desde una interfaz gráfica en http://localhost:8501, simulando pacientes y visualizando la probabilidad de readmisión.
 
 
-## ✅ Despliegue con kubernetes
+## ✅ Despliegue con kubernetes (Enfoque Hibrido)
 
 A continuación, se detallará el proceso paso a paso para la implementación de la infraestructura del proyecto utilizando Kubernetes. Es importante destacar que, en este caso, se optó por una arquitectura híbrida, ya que no todos los servicios fueron desplegados bajo Kubernetes. En particular, se utilizaron Kubernetes únicamente para desplegar los servicios de FastAPI y Streamlit.
 
@@ -297,7 +304,23 @@ Posteriormente se valida el estado de todo con el fin de verificar que los servi
 
 ![image](https://github.com/user-attachments/assets/80fb0622-190e-40b6-a115-cab884eb053d)
 
+
 Para ver especificamente los servicios expuestos en la siguiente imagen se pueden ver lo nodos con los pods corriendo correctamente. 
 
 ![image](https://github.com/user-attachments/assets/0a97a502-0464-4d92-a024-b329478c6511)
 
+## ✅ Monitoreo y Observabilidad
+
+Para garantizar una adecuada observabilidad y monitoreo de las peticiones realizadas por los usuarios sobre FastAPI, se implementó un sistema de monitoreo utilizando Prometheus y Grafana. Con el fin de centralizar y facilitar el monitoreo, se creó un archivo docker-compose-monitoreo, que orquesta estos dos componentes clave.
+
+Prometheus se encargó de la recolección y almacenamiento de métricas de los servicios, incluyendo las peticiones HTTP realizadas a FastAPI, el tiempo de respuesta, las tasas de éxito y error, así como otras métricas personalizadas. Prometheus se configuró para recopilar estos datos en intervalos regulares y almacenarlos en su base de datos de series temporales. Este enfoque permite tener un historial detallado de cómo se comportan las aplicaciones a lo largo del tiempo, lo que resulta invaluable para la identificación de patrones, cuellos de botella y posibles puntos de falla.
+
+Por otro lado, Grafana se utilizó para visualizar las métricas recopiladas por Prometheus de manera clara y comprensible. A través de paneles interactivos y personalizados, Grafana proporciona una interfaz amigable que permite monitorear en tiempo real el rendimiento de FastAPI y otros servicios del sistema. Además, se configuraron alertas en Grafana, lo que permite notificar a los administradores del sistema sobre cualquier anomalía o umbrales de rendimiento que se excedan, facilitando la toma de decisiones proactivas para resolver problemas antes de que impacten a los usuarios.
+
+![image](https://github.com/user-attachments/assets/e33caa57-cf5b-4360-8bb4-b15378755e3e)
+
+![image](https://github.com/user-attachments/assets/38e55603-65e5-4db6-8af7-693e5b1414de)
+
+## Rendimiento
+
+Para monitorear el rendimiento de utilizo locust para realziar pruebas de carga y rendimiento con el fin de simular la interacción de múltiples usuarios con los servicios desplegados, en particular con FastAPI. Mediante Locust, se pudieron definir escenarios personalizados que simulan el comportamiento de los usuarios, permitiendo evaluar cómo la aplicación maneja el tráfico y las solicitudes bajo condiciones de alta demanda. Durante las pruebas, se monitorean métricas clave como el tiempo de respuesta, la tasa de éxito y el número de solicitudes por segundo, lo que permitió identificar posibles cuellos de botella y optimizar el rendimiento de los servicios. Esta herramienta resultó esencial para garantizar que la infraestructura del proyecto pueda escalar eficientemente y ofrecer una experiencia fluida incluso en escenarios de alta carga.
